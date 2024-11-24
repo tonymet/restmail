@@ -1,8 +1,6 @@
-module github.com/google/gmail-oauth2-tools/go/sendgmail
+module tonym.us/restmail
 
-go 1.22.7
-
-toolchain go1.23.2
+go 1.23.2
 
 require (
 	github.com/google/uuid v1.6.0
