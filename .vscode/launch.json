@@ -5,12 +5,28 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Launch Package",
+            "name": "setup outlook",
             "type": "go",
             "request": "launch",
             "mode": "auto",
             "program": "${workspaceFolder}",
-            "args" : ["-provider", "outlook", "-sender", "anthony.metzidis@gmail.com", "-setup"]
+            "args" : ["-provider", "outlook", "-setup", "-sender", "anthony.metzidis@gmail.com", "-setup"]
+        },
+        {
+            "name": "setup gmail",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}",
+            "args" : ["-provider", "gmail", "-setup", "-sender", "anthony.metzidis@gmail.com", "-setup"]
+        },
+        {
+            "name": "send outlook",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}",
+            "args" : ["-provider", "outlook", "-sender", "anthony.metzidis@gmail.com"]
         }
     ]
 }
