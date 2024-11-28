@@ -63,7 +63,12 @@ func (p *OutlookProvider) getClient() *http.Client {
 		panic(err)
 	}
 	ctx := context.Background()
+	// pass through token source to refresh
 	if tok, err := st.Token(); err != nil {
+		panic(err)
+	} else if st.token, err = p.config.TokenSource(ctx, tok).Token(); err != nil {
+		panic(err)
+	} else if err := st.Save(); err != nil {
 		panic(err)
 	} else {
 		p.client = p.config.Client(ctx, tok)
