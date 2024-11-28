@@ -20,7 +20,7 @@ const MIME_LINE = "\r\n"
 
 func init() {
 	flag.StringVar(&sender, "sender", "", "Specifies the sender's email address.")
-	flag.BoolVar(&setUp, "setup", false, "If true, sendgmail sets up the sender's OAuth2 token and then exits.")
+	flag.BoolVar(&setUp, "setup", false, "Set up the OAuth2 authorization token before sending mail")
 	flag.StringVar(&dummyF, "f", "", "Dummy flag for compatibility with sendmail.")
 	flag.BoolVar(&dummyI, "i", true, "Dummy flag for compatibility with sendmail.")
 	flag.StringVar(&provider, "provider", "gmail", "gmail|outlook -- which provider to use")

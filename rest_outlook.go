@@ -123,6 +123,7 @@ func encodeMessage(in io.Reader) (io.ReadCloser, error) {
 	header := parseArgs(flag.Args())
 	var encodedBuf = bytes.NewBuffer(make([]byte, 0, 2048))
 	messageEncoder := base64.NewEncoder(base64.StdEncoding, encodedBuf)
+	defer messageEncoder.Close()
 	if _, err := io.Copy(messageEncoder, header.mimeHeader()); err != nil {
 		panic(err)
 	}
