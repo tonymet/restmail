@@ -8,7 +8,11 @@
             "type": "shell",
             "command": "godoc",
             "options": {
-                "cwd": "${workspaceFolder}"
+                "cwd": "${workspaceFolder}",
+                "shell": {
+                    "args": ["-c"],
+                    "executable": "/bin/sh"
+                }
             },
             "runOptions": {"runOn": "folderOpen"},
             "presentation": {
