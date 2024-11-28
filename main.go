@@ -33,22 +33,23 @@ func main() {
 	var (
 		oauthConfig *oauth2.Config
 		err         error
+		p           IProvider
 	)
 	if oauthConfig, err = OpenConfig(provider); err != nil {
 		panic(err)
 	}
+	switch provider {
+	case "outlook":
+		p, _ = NewProviderOutlook(oauthConfig)
+	case "gmail":
+		p, _ = NewProviderGoogle()
+	default:
+		flag.PrintDefaults()
+	}
 	if setUp {
 		setUpToken(oauthConfig)
 		return
-	}
-	switch provider {
-	case "outlook":
-		p, _ := NewProviderOutlook()
+	} else {
 		p.sendMessage(os.Stdin)
-	case "gmail":
-		p, _ := NewProviderGoogle()
-		p.sendMessage(os.Stdin)
-	default:
-		flag.PrintDefaults()
 	}
 }
