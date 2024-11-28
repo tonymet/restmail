@@ -33,7 +33,7 @@ func OpenConfig(provider string) (*oauth2.Config, error) {
 	if home, err := os.UserHomeDir(); err != nil {
 		panic(err)
 	} else if f, err := os.Open(path.Join(home, ".config/restmail/"+provider+".json")); err != nil {
-		return nil, fmt.Errorf("Provider config not found: %s", err)
+		return nil, fmt.Errorf("provider config not found: %s", err)
 	} else if buf, err := io.ReadAll(f); err != nil {
 		panic(err)
 	} else if err := json.Unmarshal(buf, &s.configParams); err != nil {
