@@ -36,7 +36,7 @@ func NewProviderGoogle() (IProvider, error) {
 		p *GoogleProvider = &GoogleProvider{config: googleOAuth2Config}
 	)
 	ctx := context.Background()
-	var st = SavedToken{provider: "google", id: sender}
+	var st = SavedToken{provider: provider, id: sender}
 	if err := st.Open(); err != nil {
 		panic(err)
 	}
