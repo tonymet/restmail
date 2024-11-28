@@ -29,7 +29,7 @@ func setUpToken(oauthConfig *oauth2.Config) {
 	if savedToken, err := aHandler.getCredentials(oauthConfig); err != nil {
 		panic(err)
 	} else {
-		savedToken.provider = provider
+		savedToken.provider = "gmail"
 		savedToken.id = sender
 		if err := savedToken.Save(); err != nil {
 			panic(err)

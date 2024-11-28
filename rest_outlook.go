@@ -48,15 +48,16 @@ func (p *OutlookProvider) sendMessage(messageReader io.Reader) error {
 	return p.sendMessageRest(messageReader)
 }
 
-func NewProviderOutlook() (IProvider, error) {
+func NewProviderOutlook(conf *oauth2.Config) (IProvider, error) {
 	var p = &OutlookProvider{
 		provider: "outlook",
-		config:   outlookOAuth2Config,
+		config:   conf,
 	}
+	p.getClient()
 	return p, nil
 }
 
-func (p *OutlookProvider) getClient(conf *oauth2.Config) *http.Client {
+func (p *OutlookProvider) getClient() *http.Client {
 	var st = SavedToken{provider: p.provider, id: sender}
 	if err := st.Open(); err != nil {
 		panic(err)
@@ -65,7 +66,7 @@ func (p *OutlookProvider) getClient(conf *oauth2.Config) *http.Client {
 	if tok, err := st.Token(); err != nil {
 		panic(err)
 	} else {
-		p.client = conf.Client(ctx, tok)
+		p.client = p.config.Client(ctx, tok)
 		return p.client
 	}
 }
