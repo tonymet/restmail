@@ -28,7 +28,7 @@ type SavedConfig struct {
 	configParams OAuthConfigJSON
 }
 
-func OpenConfig(provider string) (*oauth2.Config, error) {
+func OpenConfig(provider string) (r *oauth2.Config, err error) {
 	var s SavedConfig
 	if home, err := os.UserHomeDir(); err != nil {
 		panic(err)
@@ -41,17 +41,14 @@ func OpenConfig(provider string) (*oauth2.Config, error) {
 	}
 	switch provider {
 	case "gmail":
-		var r = googleOAuth2Config
-		r.ClientID = s.configParams.Web.ClientID
-		r.ClientSecret = s.configParams.Web.ClientSecret
-		return r, nil
+		r = googleOAuth2Config
 	case "outlook":
-		var r = outlookOAuth2Config
-		r.ClientID = s.configParams.Web.ClientID
-		r.ClientSecret = s.configParams.Web.ClientSecret
-		return r, nil
+		r = outlookOAuth2Config
 	default:
 		panic(fmt.Errorf("provider does not exist: %s", provider))
 	}
+	r.ClientID = s.configParams.Web.ClientID
+	r.ClientSecret = s.configParams.Web.ClientSecret
+	return r, nil
 
 }
