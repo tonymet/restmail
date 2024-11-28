@@ -42,7 +42,7 @@ func (h *callbackHandler) authHandler(authCodeURL string) (string, string, error
 	fmt.Println()
 	fmt.Println("1. Ensure that you are logged in as", sender, "in your browser.")
 	fmt.Println()
-	fmt.Println("2. Open the following link and authorise sendgmail:")
+	fmt.Println("2. Click this link to authorize:")
 	fmt.Println(authCodeURL) // hack to obtain a refresh token
 	fmt.Println()
 	fmt.Println("3. Waiting for authorization code:")
