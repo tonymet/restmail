@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"io"
 	"log"
 	"os"
 	"strings"
@@ -86,7 +87,7 @@ func parseArgs(args []string) (mh messageHeader) {
 	return
 }
 
-func (mh messageHeader) mimeHeader() string {
+func (mh messageHeader) mimeHeader() io.Reader {
 	var header strings.Builder
 	header.WriteString("To: " + strings.Join(mh.to, ",") + MIME_LINE)
 	if len(mh.bcc) > 0 {
@@ -95,5 +96,5 @@ func (mh messageHeader) mimeHeader() string {
 	if len(mh.cc) > 0 {
 		header.WriteString("Cc: " + strings.Join(mh.cc, ",") + MIME_LINE)
 	}
-	return header.String()
+	return strings.NewReader(header.String())
 }

@@ -8,7 +8,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"path"
@@ -121,22 +120,16 @@ func (s *SavedToken) Token() (*oauth2.Token, error) {
 }
 
 func encodeMessage(in io.Reader) (io.ReadCloser, error) {
-	message, err := io.ReadAll(in)
-	if err != nil {
-		log.Fatalf("unable to read stdin")
-	}
 	header := parseArgs(flag.Args())
-	headerByte := []byte(header.mimeHeader())
-	var messageBuf bytes.Buffer
-	messageBuf.Write(headerByte)
-	messageBuf.Write(message)
-
-	var encodedBuf bytes.Buffer
-	messageEncoder := base64.NewEncoder(base64.StdEncoding, &encodedBuf)
-	if _, err := io.Copy(messageEncoder, &messageBuf); err != nil {
+	var encodedBuf = bytes.NewBuffer(make([]byte, 0, 2048))
+	messageEncoder := base64.NewEncoder(base64.StdEncoding, encodedBuf)
+	if _, err := io.Copy(messageEncoder, header.mimeHeader()); err != nil {
 		panic(err)
 	}
-	return io.NopCloser(&encodedBuf), nil
+	if _, err := io.Copy(messageEncoder, in); err != nil {
+		panic(err)
+	}
+	return io.NopCloser(encodedBuf), nil
 }
 
 // send from stdin
