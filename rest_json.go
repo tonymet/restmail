@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -50,5 +51,22 @@ func OpenConfig(provider string) (r *oauth2.Config, err error) {
 	r.ClientID = s.configParams.Web.ClientID
 	r.ClientSecret = s.configParams.Web.ClientSecret
 	return r, nil
+}
+
+func (s *SavedConfig) Save() error {
+	if home, err := os.UserHomeDir(); err != nil {
+		panic(err)
+	} else if f, err := os.Create(path.Join(home, ".config/restmail/"+provider+".json")); err != nil {
+		return fmt.Errorf("provider config not found: %s", err)
+	} else if jsonContents, err := json.Marshal(s.configParams); err != nil {
+		return err
+	} else {
+		buf := bytes.NewBuffer(jsonContents)
+		_, err := io.Copy(f, buf)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
 
 }
