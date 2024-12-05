@@ -6,6 +6,11 @@ for email automation, notifications and with `git send-mail` for sharing patches
 restmail requires only minimal authorization scope to send mail.  No access to reading
 or deleting mail is requested.
 
+## Install
+```
+# install to ~/go/bin ($GOPATH)
+go install github.com/tonymet/restmail@latest
+```
 
 ## Initial Provider Setup (gmail or outlook)
 Initial setup is done once / provider. This configures oauth2 clientID & Secret
