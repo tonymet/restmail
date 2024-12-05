@@ -45,8 +45,7 @@ func NewProviderGoogle() (IProvider, error) {
 		panic(err)
 	} else {
 		ts := p.config.TokenSource(ctx, token)
-		p.srv, err = gmail.NewService(ctx, option.WithTokenSource(ts))
-		if err != nil {
+		if p.srv, err = gmail.NewService(ctx, option.WithTokenSource(ts)); err != nil {
 			panic(err)
 		} else if st.token, err = ts.Token(); err != nil {
 			panic(err)
