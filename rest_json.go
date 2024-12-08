@@ -35,10 +35,13 @@ func OpenConfig(provider string) (r *oauth2.Config, err error) {
 		panic(err)
 	} else if f, err := os.Open(path.Join(home, ".config/restmail/"+provider+".json")); err != nil {
 		return nil, fmt.Errorf("provider config not found: %s", err)
-	} else if buf, err := io.ReadAll(f); err != nil {
-		panic(err)
-	} else if err := json.Unmarshal(buf, &s.configParams); err != nil {
-		panic(err)
+	} else {
+		defer f.Close()
+		if buf, err := io.ReadAll(f); err != nil {
+			panic(err)
+		} else if err := json.Unmarshal(buf, &s.configParams); err != nil {
+			panic(err)
+		}
 	}
 	switch provider {
 	case "gmail":

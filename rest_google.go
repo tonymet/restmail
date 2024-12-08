@@ -38,7 +38,7 @@ func NewProviderGoogle() (IProvider, error) {
 	ctx := context.Background()
 	var st = SavedToken{provider: provider, id: sender}
 	if err := st.Open(); err != nil {
-		panic(err)
+		return nil, err
 	}
 	// use refresh tokensource
 	if token, err := st.Token(); err != nil {
@@ -48,7 +48,7 @@ func NewProviderGoogle() (IProvider, error) {
 		if p.srv, err = gmail.NewService(ctx, option.WithTokenSource(ts)); err != nil {
 			panic(err)
 		} else if st.token, err = ts.Token(); err != nil {
-			panic(err)
+			return nil, err
 		} else if err := st.Save(); err != nil {
 			panic(err)
 		}

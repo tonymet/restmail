@@ -59,9 +59,15 @@ func main() {
 	}
 	switch provider {
 	case "outlook":
-		p, _ = NewProviderOutlook(oauthConfig)
+		p, err = NewProviderOutlook(oauthConfig)
+		if err != nil {
+			log.Printf("error accessing token: %s", err)
+		}
 	case "gmail":
-		p, _ = NewProviderGoogle()
+		p, err = NewProviderGoogle()
+		if err != nil {
+			log.Printf("error accessing token: %s", err)
+		}
 	default:
 		flag.PrintDefaults()
 	}

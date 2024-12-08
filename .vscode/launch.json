@@ -18,7 +18,7 @@
             "request": "launch",
             "mode": "auto",
             "program": "${workspaceFolder}",
-            "args" : ["-provider", "gmail", "-setup", "-sender", "anthony.metzidis@gmail.com", "-setup"]
+            "args" : ["-provider", "gmail", "-authorize", "-f", "anthony.metzidis@gmail.com"]
         },
         {
             "name": "send outlook",

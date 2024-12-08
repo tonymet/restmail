@@ -12,7 +12,7 @@ import (
 
 type SavedToken struct {
 	provider, id string
-	reader       io.Reader
+	reader       io.ReadCloser
 	token        *oauth2.Token
 }
 
@@ -43,10 +43,13 @@ func (s *SavedToken) Open() error {
 		panic(err)
 	} else if s.reader, err = os.Open(configPath); err != nil {
 		panic(err)
-	} else if jsonMem, err := io.ReadAll(s.reader); err != nil {
-		panic(err)
-	} else if err := json.Unmarshal(jsonMem, &tokenVar); err != nil {
-		panic(err)
+	} else {
+		defer s.reader.Close()
+		if jsonMem, err := io.ReadAll(s.reader); err != nil {
+			panic(err)
+		} else if err := json.Unmarshal(jsonMem, &tokenVar); err != nil {
+			panic(err)
+		}
 	}
 	s.token = &tokenVar
 	return nil
