@@ -1,10 +1,10 @@
-# restmail
+# restmail -- sendmail for email rest APIs
 
-restmail sends email from CLI using gmail & outlook rest APIs. It can be used
+restmail is a sendmail-compatible CLI using gmail & outlook rest APIs. It can be used
 for email automation, notifications and with `git send-mail` for sharing patches. 
 
 restmail requires only minimal authorization scope to send mail.  No access to reading
-or deleting mail is requested.
+or deleting mail is needed.
 
 ## Install
 ```
