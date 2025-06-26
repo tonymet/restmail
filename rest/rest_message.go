@@ -1,4 +1,4 @@
-package main
+package rest
 
 import (
 	"bytes"
@@ -7,6 +7,8 @@ import (
 	"io"
 	"strings"
 )
+
+const MIME_LINE = "\r\n"
 
 type messageHeader struct {
 	to, cc, bcc []string

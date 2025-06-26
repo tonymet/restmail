@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/tonymet/restmail/rest"
 	"golang.org/x/oauth2"
 )
 
@@ -13,12 +14,10 @@ var (
 	provider          string
 	sender            string
 	authorize, dummyI bool
-	initConfig        OAuthConfigJSON
+	initConfig        rest.OAuthConfigJSON
 	configClient      bool
 	cmdConfigClient   *flag.FlagSet
 )
-
-const MIME_LINE = "\r\n"
 
 func init() {
 	flag.StringVar(&sender, "f", "", "Specifies the sender's email address.")
@@ -38,33 +37,36 @@ func main() {
 	var (
 		oauthConfig *oauth2.Config
 		err         error
-		p           IProvider
+		p           rest.IProvider
 	)
 	// initial client config
 	if configClient {
-		var sConfig SavedConfig
+		var sConfig = rest.SavedConfig{Provider: provider}
 		if initConfig.Web.ClientID == "" || initConfig.Web.ClientSecret == "" || provider == "" {
 			log.Fatal("-clientID , -provider, and -clientSecret need to be set")
 		}
-		sConfig.configParams = initConfig
+		sConfig.ConfigParams = initConfig
 		err := sConfig.Save()
+		initConfig := oauth2.Config{ClientID: sConfig.ConfigParams.Web.ClientID}
+		rest.CreateInitialToken(&initConfig, provider, sender)
+
 		if err != nil {
 			panic(err)
 		}
 		os.Exit(0)
 	}
 
-	if oauthConfig, err = OpenConfig(provider); err != nil {
+	if oauthConfig, err = rest.OpenConfig(provider); err != nil {
 		panic(err)
 	}
 	switch provider {
 	case "outlook":
-		p, err = NewProviderOutlook(oauthConfig)
+		p, err = rest.NewProviderOutlook(oauthConfig)
 		if err != nil {
 			log.Printf("error accessing token: %s", err)
 		}
 	case "gmail":
-		p, err = NewProviderGoogle()
+		p, err = rest.NewProviderGoogle(provider, sender)
 		if err != nil {
 			log.Printf("error accessing token: %s", err)
 		}
@@ -72,9 +74,9 @@ func main() {
 		flag.PrintDefaults()
 	}
 	if authorize {
-		setUpToken(oauthConfig)
+		rest.SetUpToken(oauthConfig, provider, sender)
 		return
 	} else {
-		p.sendMessage(os.Stdin)
+		p.SendMessage(os.Stdin)
 	}
 }
