@@ -1,4 +1,4 @@
-package main
+package rest
 
 import (
 	"context"
@@ -38,7 +38,7 @@ func (h *callbackHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 // prompt user on CLI for oauth consent screen, wait on channel for code from http
-func (h *callbackHandler) authHandler(authCodeURL string) (string, string, error) {
+func (h *callbackHandler) authHandler(authCodeURL, sender string) (string, string, error) {
 	fmt.Println()
 	fmt.Println("1. Ensure that you are logged in as", sender, "in your browser.")
 	fmt.Println()
@@ -57,7 +57,7 @@ func (h *callbackHandler) getCredentials(oauthConfig *oauth2.Config) (*SavedToke
 	// Redirect user to consent page to ask for permission
 	// for the scopes specified above.
 	url := oauthConfig.AuthCodeURL(h.state, oauth2.AccessTypeOffline, oauth2.S256ChallengeOption(verifier))
-	code, state, err := h.authHandler(url)
+	code, state, err := h.authHandler(url, oauthConfig.ClientID)
 	if err != nil {
 		panic(err)
 	}

@@ -1,4 +1,4 @@
-package main
+package rest
 
 import (
 	"bytes"
@@ -26,12 +26,15 @@ type OAuthConfigJSON struct {
 }
 
 type SavedConfig struct {
-	configParams OAuthConfigJSON
+	ConfigParams OAuthConfigJSON
+	Provider     string
 }
 
 func OpenConfig(provider string) (r *oauth2.Config, err error) {
 	var s SavedConfig
 	if home, err := os.UserHomeDir(); err != nil {
+		panic(err)
+	} else if err := os.MkdirAll(path.Join(home, ".config/restmail"), 0755); err != nil {
 		panic(err)
 	} else if f, err := os.Open(path.Join(home, ".config/restmail/"+provider+".json")); err != nil {
 		return nil, fmt.Errorf("provider config not found: %s", err)
@@ -39,7 +42,7 @@ func OpenConfig(provider string) (r *oauth2.Config, err error) {
 		defer f.Close()
 		if buf, err := io.ReadAll(f); err != nil {
 			panic(err)
-		} else if err := json.Unmarshal(buf, &s.configParams); err != nil {
+		} else if err := json.Unmarshal(buf, &s.ConfigParams); err != nil {
 			panic(err)
 		}
 	}
@@ -51,17 +54,19 @@ func OpenConfig(provider string) (r *oauth2.Config, err error) {
 	default:
 		panic(fmt.Errorf("provider does not exist: %s", provider))
 	}
-	r.ClientID = s.configParams.Web.ClientID
-	r.ClientSecret = s.configParams.Web.ClientSecret
+	r.ClientID = s.ConfigParams.Web.ClientID
+	r.ClientSecret = s.ConfigParams.Web.ClientSecret
 	return r, nil
 }
 
 func (s *SavedConfig) Save() error {
 	if home, err := os.UserHomeDir(); err != nil {
 		panic(err)
-	} else if f, err := os.Create(path.Join(home, ".config/restmail/"+provider+".json")); err != nil {
+	} else if err := os.MkdirAll(path.Join(home, ".config/restmail"), 0755); err != nil {
+		panic(err)
+	} else if f, err := os.Create(path.Join(home, ".config/restmail/"+s.Provider+".json")); err != nil {
 		return fmt.Errorf("provider config not found: %s", err)
-	} else if jsonContents, err := json.Marshal(s.configParams); err != nil {
+	} else if jsonContents, err := json.Marshal(s.ConfigParams); err != nil {
 		return err
 	} else {
 		buf := bytes.NewBuffer(jsonContents)

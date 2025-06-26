@@ -1,4 +1,4 @@
-package main
+package rest
 
 import (
 	"context"
@@ -25,7 +25,7 @@ type GoogleProvider struct {
 
 type IProvider interface {
 	//init(config *oauth2.Config) error
-	sendMessage(io.Reader) error
+	SendMessage(io.Reader) error
 }
 
 var (
@@ -44,7 +44,7 @@ var outlookOAuth2Config = &oauth2.Config{
 	Endpoint: microsoft.AzureADEndpoint("consumers"),
 }
 
-func (p *OutlookProvider) sendMessage(messageReader io.Reader) error {
+func (p *OutlookProvider) SendMessage(messageReader io.Reader) error {
 	return p.sendMessageRest(messageReader)
 }
 
@@ -59,7 +59,7 @@ func NewProviderOutlook(conf *oauth2.Config) (IProvider, error) {
 
 func (p *OutlookProvider) getClient() (*http.Client, error) {
 	var (
-		st  = SavedToken{provider: p.provider, id: sender}
+		st  = SavedToken{provider: p.provider, id: p.config.ClientID}
 		err error
 	)
 	if err := st.Open(); err != nil {

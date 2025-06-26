@@ -1,4 +1,4 @@
-package main
+package rest
 
 import (
 	"encoding/json"
@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path"
+	"path/filepath"
 
 	"golang.org/x/oauth2"
 )
@@ -24,12 +25,19 @@ func (s SavedToken) Path() (string, error) {
 	}
 }
 
-func setUpToken(oauthConfig *oauth2.Config) {
+func CreateInitialToken(oauthConfig *oauth2.Config, provider, sender string) {
+	var savedToken = SavedToken{provider: provider, id: sender, token: &oauth2.Token{}}
+	if err := savedToken.Save(); err != nil {
+		panic(err)
+	}
+}
+
+func SetUpToken(oauthConfig *oauth2.Config, provider, sender string) {
 	aHandler := newCallbackHandler()
 	if savedToken, err := aHandler.getCredentials(oauthConfig); err != nil {
 		panic(err)
 	} else {
-		savedToken.provider = "gmail"
+		savedToken.provider = provider
 		savedToken.id = sender
 		if err := savedToken.Save(); err != nil {
 			panic(err)
@@ -40,6 +48,8 @@ func setUpToken(oauthConfig *oauth2.Config) {
 func (s *SavedToken) Open() error {
 	var tokenVar oauth2.Token
 	if configPath, err := s.Path(); err != nil {
+		panic(err)
+	} else if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
 		panic(err)
 	} else if s.reader, err = os.Open(configPath); err != nil {
 		panic(err)
@@ -59,6 +69,8 @@ func (s *SavedToken) Save() error {
 	if tokenJson, err := json.Marshal(*(s.token)); err != nil {
 		panic(err)
 	} else if configPath, err := s.Path(); err != nil {
+		panic(err)
+	} else if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
 		panic(err)
 	} else {
 		return os.WriteFile(configPath, tokenJson, 0600)

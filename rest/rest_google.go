@@ -1,4 +1,4 @@
-package main
+package rest
 
 import (
 	"context"
@@ -22,7 +22,7 @@ var googleOAuth2Config = &oauth2.Config{
 	Endpoint: google.Endpoint,
 }
 
-func (p *GoogleProvider) sendMessage(messageReader io.Reader) error {
+func (p *GoogleProvider) SendMessage(messageReader io.Reader) error {
 	if encodedMessage, err := encodeMessage(messageReader); err != nil {
 		panic(err)
 	} else if _, err := p.sendMessageRest(encodedMessage); err != nil {
@@ -31,7 +31,7 @@ func (p *GoogleProvider) sendMessage(messageReader io.Reader) error {
 	return nil
 }
 
-func NewProviderGoogle() (IProvider, error) {
+func NewProviderGoogle(provider, sender string) (IProvider, error) {
 	var (
 		p *GoogleProvider = &GoogleProvider{config: googleOAuth2Config}
 	)
