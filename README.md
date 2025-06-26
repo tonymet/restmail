@@ -9,7 +9,7 @@ or deleting mail is needed.
 ## Install
 ```
 # install to ~/go/bin ($GOPATH)
-go install github.com/tonymet/restmail@latest
+go install github.com/tonymet/restmail/cmd/restmail@latest
 ```
 
 ## Initial Provider Setup (gmail or outlook)
@@ -28,7 +28,7 @@ Once provider config is set up above, you need to do the oauth flow through
 a web browser.  Setup is only done once or if the tokens are invalidated. 
 ```
 FROM=your.name@gmail.com
-restmail -setup -provider gmail -sender "${FROM}"
+restmail -authorize -provider gmail -sender "${FROM}"
 ```
 When this is complete, your auth-token & refresh-token are saved and refreshed
 automatically.
@@ -38,7 +38,7 @@ automatically.
 FROM=your.name@gmail.com
 TO=friend@gmail.com
 CC=billy@gmail.com
-echo "subject: test subject\n\ntest messagee" | go run . -f "${FROM} -provider gmail "${TO}" cc:"${CC}"
+echo "subject: test subject\n\ntest message" | restmail -f "${FROM}" -provider gmail "${TO}" cc:"${CC}"
 
 ```
 
