@@ -56,7 +56,7 @@ func (h *callbackHandler) getCredentials(oauthConfig *oauth2.Config) (*SavedToke
 
 	// Redirect user to consent page to ask for permission
 	// for the scopes specified above.
-	url := oauthConfig.AuthCodeURL(h.state, oauth2.AccessTypeOffline, oauth2.S256ChallengeOption(verifier))
+	url := oauthConfig.AuthCodeURL(h.state, oauth2.AccessTypeOffline, oauth2.ApprovalForce, oauth2.S256ChallengeOption(verifier))
 	code, state, err := h.authHandler(url, oauthConfig.ClientID)
 	if err != nil {
 		panic(err)
