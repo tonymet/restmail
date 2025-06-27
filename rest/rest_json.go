@@ -67,8 +67,10 @@ func (s *SavedConfig) Save() error {
 	} else if f, err := os.Create(path.Join(home, ".config/restmail/"+s.Provider+".json")); err != nil {
 		return fmt.Errorf("provider config not found: %s", err)
 	} else if jsonContents, err := json.Marshal(s.ConfigParams); err != nil {
+		defer f.Close()
 		return err
 	} else {
+		defer f.Close()
 		buf := bytes.NewBuffer(jsonContents)
 		_, err := io.Copy(f, buf)
 		if err != nil {
