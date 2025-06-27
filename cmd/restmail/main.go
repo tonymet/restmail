@@ -61,7 +61,7 @@ func main() {
 	}
 	switch provider {
 	case "outlook":
-		p, err = rest.NewProviderOutlook(oauthConfig)
+		p, err = rest.NewProviderOutlook(oauthConfig, sender)
 		if err != nil {
 			log.Printf("error accessing token: %s", err)
 		}

@@ -13,9 +13,9 @@ import (
 )
 
 type OutlookProvider struct {
-	config   *oauth2.Config
-	client   *http.Client
-	provider string
+	config           *oauth2.Config
+	client           *http.Client
+	provider, sender string
 }
 
 type GoogleProvider struct {
@@ -48,10 +48,11 @@ func (p *OutlookProvider) SendMessage(messageReader io.Reader) error {
 	return p.sendMessageRest(messageReader)
 }
 
-func NewProviderOutlook(conf *oauth2.Config) (IProvider, error) {
+func NewProviderOutlook(conf *oauth2.Config, sender string) (IProvider, error) {
 	var p = &OutlookProvider{
 		provider: "outlook",
 		config:   conf,
+		sender:   sender,
 	}
 	_, err := p.getClient()
 	return p, err
@@ -59,7 +60,7 @@ func NewProviderOutlook(conf *oauth2.Config) (IProvider, error) {
 
 func (p *OutlookProvider) getClient() (*http.Client, error) {
 	var (
-		st  = SavedToken{provider: p.provider, id: p.config.ClientID}
+		st  = SavedToken{provider: p.provider, id: p.sender}
 		err error
 	)
 	if err := st.Open(); err != nil {
