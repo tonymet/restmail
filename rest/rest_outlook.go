@@ -64,14 +64,15 @@ func (p *OutlookProvider) getClient() (*http.Client, error) {
 		err error
 	)
 	if err := st.Open(); err != nil {
-		panic(err)
+		return nil, err
+
 	}
 	ctx := context.Background()
 	// pass through token source to refresh
 	if st.token, err = p.config.TokenSource(ctx, st.token).Token(); err != nil {
 		return nil, err
 	} else if err := st.Save(); err != nil {
-		panic(err)
+		return nil, err
 	} else {
 		p.client = p.config.Client(ctx, st.token)
 		return p.client, nil
@@ -87,9 +88,9 @@ func (p *OutlookProvider) sendMessageRest(messageReader io.Reader) error {
 	} else {
 		req.Header.Set("Content-type", "text/plain")
 		if res, err := p.client.Do(req); err != nil {
-			panic(err)
+			return err
 		} else if res.StatusCode > 299 {
-			panic(fmt.Errorf("error sending mail: statusCode = %d", res.StatusCode))
+			return fmt.Errorf("error sending mail: statusCode = %d", res.StatusCode)
 		}
 	}
 	return nil
