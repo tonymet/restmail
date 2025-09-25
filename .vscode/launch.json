@@ -9,15 +9,17 @@
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "program": "${workspaceFolder}",
-            "args" : ["-provider", "outlook", "-setup", "-sender", "anthony.metzidis@gmail.com", "-setup"]
+            "cwd": "${workspaceFolder}",
+            "program": "./cmd/restmail",
+            "args" : ["-provider", "outlook", "-setup", "-sender", "anthony.metzidis@gmail.com", "-setup"],
         },
         {
             "name": "setup gmail",
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "program": "${workspaceFolder}",
+            "cwd": "${workspaceFolder}",
+            "program": "./cmd/restmail",
             "args" : ["-provider", "gmail", "-authorize", "-f", "anthony.metzidis@gmail.com"]
         },
         {
@@ -25,8 +27,19 @@
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "program": "${workspaceFolder}",
+            "cwd": "${workspaceFolder}",
+            "program": "./cmd/restmail",
             "args" : ["-provider", "outlook", "-sender", "anthony.metzidis@gmail.com"]
+        },
+        {
+            "name": "send gmail",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "cwd": "${workspaceFolder}",
+            "program": "./cmd/restmail",
+            "args" : ["-provider", "gmail", "-f", "anthony.metzidis@gmail.com" , "anthony.metzidis@gmail.com"],
+            "console": "integratedTerminal"
         }
     ]
 }

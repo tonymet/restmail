@@ -60,8 +60,7 @@ func NewProviderOutlook(conf *oauth2.Config, sender string) (IProvider, error) {
 
 func (p *OutlookProvider) getClient() (*http.Client, error) {
 	var (
-		st  = SavedToken{provider: p.provider, id: p.sender}
-		err error
+		st = SavedToken{provider: p.provider, id: p.sender}
 	)
 	if err := st.Open(); err != nil {
 		return nil, err
@@ -69,14 +68,8 @@ func (p *OutlookProvider) getClient() (*http.Client, error) {
 	}
 	ctx := context.Background()
 	// pass through token source to refresh
-	if st.token, err = p.config.TokenSource(ctx, st.token).Token(); err != nil {
-		return nil, err
-	} else if err := st.Save(); err != nil {
-		return nil, err
-	} else {
-		p.client = p.config.Client(ctx, st.token)
-		return p.client, nil
-	}
+	p.client = p.config.Client(ctx, st.token)
+	return p.client, nil
 }
 
 // send from stdin

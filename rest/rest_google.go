@@ -33,27 +33,19 @@ func (p *GoogleProvider) SendMessage(messageReader io.Reader) error {
 
 func NewProviderGoogle(provider, sender string) (IProvider, error) {
 	var (
-		p *GoogleProvider = &GoogleProvider{config: googleOAuth2Config}
+		p   = &GoogleProvider{config: googleOAuth2Config}
+		err error
 	)
 	ctx := context.Background()
-	var st = SavedToken{provider: provider, id: sender}
+	var st = &SavedToken{provider: provider, id: sender, config: googleOAuth2Config}
 	if err := st.Open(); err != nil {
 		return nil, err
 	}
 	// use refresh tokensource
-	if token, err := st.Token(); err != nil {
+	if p.srv, err = gmail.NewService(ctx, option.WithTokenSource(st)); err != nil {
 		panic(err)
-	} else {
-		ts := p.config.TokenSource(ctx, token)
-		if p.srv, err = gmail.NewService(ctx, option.WithTokenSource(ts)); err != nil {
-			panic(err)
-		} else if st.token, err = ts.Token(); err != nil {
-			return nil, err
-		} else if err := st.Save(); err != nil {
-			panic(err)
-		}
-		return p, nil
 	}
+	return p, nil
 }
 
 func (p *GoogleProvider) sendMessageRest(bodyReader io.ReadCloser) (*http.Response, error) {
