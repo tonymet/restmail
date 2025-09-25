@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -15,6 +16,7 @@ type SavedToken struct {
 	provider, id string
 	reader       io.ReadCloser
 	token        *oauth2.Token
+	config       *oauth2.Config
 }
 
 func (s SavedToken) Path() (string, error) {
@@ -26,7 +28,7 @@ func (s SavedToken) Path() (string, error) {
 }
 
 func CreateInitialToken(oauthConfig *oauth2.Config, provider, sender string) {
-	var savedToken = SavedToken{provider: provider, id: sender, token: &oauth2.Token{}}
+	var savedToken = SavedToken{provider: provider, id: sender, token: &oauth2.Token{}, config: oauthConfig}
 	if err := savedToken.Save(); err != nil {
 		panic(err)
 	}
@@ -77,6 +79,20 @@ func (s *SavedToken) Save() error {
 	}
 }
 
+// wrap oauth2.Conf.TokenSource to handle saving the token when it changes
 func (s *SavedToken) Token() (*oauth2.Token, error) {
-	return s.token, nil
+	oldToken := s.token
+	ts := s.config.TokenSource(context.Background(), oldToken) // this refreshes the token if needed
+	newToken, err := ts.Token()
+	if err != nil {
+		return newToken, err
+	}
+	if newToken.AccessToken != oldToken.AccessToken {
+		s.token = newToken
+		err := s.Save()
+		if err != nil {
+			return newToken, err
+		}
+	}
+	return newToken, nil
 }

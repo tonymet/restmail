@@ -1,7 +1,6 @@
 package rest
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -30,8 +29,7 @@ type SavedConfig struct {
 	Provider     string
 }
 
-func OpenConfig(provider string) (r *oauth2.Config, err error) {
-	var s SavedConfig
+func GetConfigReader(provider string) (io.Reader, error) {
 	if home, err := os.UserHomeDir(); err != nil {
 		panic(err)
 	} else if err := os.MkdirAll(path.Join(home, ".config/restmail"), 0755); err != nil {
@@ -39,11 +37,22 @@ func OpenConfig(provider string) (r *oauth2.Config, err error) {
 	} else if f, err := os.Open(path.Join(home, ".config/restmail/"+provider+".json")); err != nil {
 		return nil, fmt.Errorf("provider config not found: %s", err)
 	} else {
-		defer f.Close()
-		if buf, err := io.ReadAll(f); err != nil {
-			panic(err)
-		} else if err := json.Unmarshal(buf, &s.ConfigParams); err != nil {
-			panic(err)
+		return f, nil
+	}
+}
+
+func OpenConfig(provider string) (r *oauth2.Config, err error) {
+	var (
+		f io.Reader
+		s SavedConfig
+	)
+	if f, err = GetConfigReader(provider); err != nil {
+		return &oauth2.Config{}, err
+	} else {
+		decoder := json.NewDecoder(f)
+		err := decoder.Decode(&s.ConfigParams)
+		if err != nil {
+			return &oauth2.Config{}, err
 		}
 	}
 	switch provider {
@@ -66,17 +75,9 @@ func (s *SavedConfig) Save() error {
 		panic(err)
 	} else if f, err := os.Create(path.Join(home, ".config/restmail/"+s.Provider+".json")); err != nil {
 		return fmt.Errorf("provider config not found: %s", err)
-	} else if jsonContents, err := json.Marshal(s.ConfigParams); err != nil {
-		defer f.Close()
-		return err
 	} else {
 		defer f.Close()
-		buf := bytes.NewBuffer(jsonContents)
-		_, err := io.Copy(f, buf)
-		if err != nil {
-			return err
-		}
-		return nil
+		enc := json.NewEncoder(f)
+		return enc.Encode(&s.ConfigParams)
 	}
-
 }
