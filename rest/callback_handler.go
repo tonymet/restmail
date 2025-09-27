@@ -50,7 +50,7 @@ func (h *callbackHandler) authHandler(authCodeURL, sender string) (string, strin
 }
 
 // oauth signing / challenge / etc
-func (h *callbackHandler) getCredentials(oauthConfig *oauth2.Config) (*SavedToken, error) {
+func (h *callbackHandler) getCredentials(oauthConfig *oauth2.Config) (*oauth2.Token, error) {
 	ctx := context.Background()
 	verifier := oauth2.GenerateVerifier()
 
@@ -67,10 +67,7 @@ func (h *callbackHandler) getCredentials(oauthConfig *oauth2.Config) (*SavedToke
 	if tok, err := oauthConfig.Exchange(ctx, code, oauth2.VerifierOption(verifier)); err != nil {
 		panic(err)
 	} else {
-		//todo link to provider
-		var s SavedToken
-		s.token = tok
-		return &s, nil
+		return tok, nil
 	}
 }
 
@@ -81,7 +78,7 @@ func newCallbackHandler() *callbackHandler {
 	h.state = uuid.NewString()
 	go func() {
 		http.Handle("/", &h)
-		if err := http.ListenAndServe("127.0.0.1:5000", nil); err != nil {
+		if err := http.ListenAndServe(":5000", nil); err != nil {
 			panic(err)
 		}
 	}()

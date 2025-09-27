@@ -1,3 +1,4 @@
+// nolint: errcheck
 package rest
 
 import (
@@ -6,6 +7,8 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"os"
+
 	//"net/http/httputil"
 	"strings"
 	"testing"
@@ -13,6 +16,7 @@ import (
 
 var (
 	tsMicrosoft, tsGoogle *httptest.Server
+	testEmail             = os.Getenv("TEST_EMAIL")
 )
 
 var message = `subject: test subject
@@ -77,14 +81,15 @@ func setupTest() {
 func TestSendMailMicrosoft(t *testing.T) {
 	t.Skip()
 	setupTest()
-	if oauthConfig, err := OpenConfig("outlook"); err != nil {
+	storage := &ConfigStorageOS{ConfigStorageBase: ConfigStorageBase{Provider: "outlook"}}
+	if oauthConfig, err := OpenConfig(storage, "outlook"); err != nil {
 		panic(err)
-	} else if p, err := NewProviderOutlook(oauthConfig, "anthony.metzidis@gmail.com"); err != nil {
+	} else if p, err := NewProviderOutlook(oauthConfig, testEmail, storage); err != nil {
 		t.Log("error accessing token")
 		t.Log(err)
 		t.Fail()
 	} else {
-		if err := p.SendMessage(strings.NewReader(message)); err != nil {
+		if err := p.SendMessage(strings.NewReader(message), []string{testEmail}); err != nil {
 			t.Log("send failure")
 			t.Fail()
 		}

@@ -1,9 +1,9 @@
+// nolint: errcheck
 package rest
 
 import (
 	"bytes"
 	"encoding/base64"
-	"flag"
 	"io"
 	"log"
 	"os"
@@ -17,7 +17,7 @@ func encodeMessageString(in io.Reader) (string, error) {
 	if err != nil {
 		log.Fatalf("unable to read stdin")
 	}
-	header := parseArgs(flag.Args())
+	header := parseArgs([]string{testEmail})
 	var messageString strings.Builder
 	io.Copy(&messageString, header.mimeHeader())
 	messageString.WriteString(string(message))
@@ -35,7 +35,7 @@ func BenchmarkEncodeMessage(b *testing.B) {
 		b.ResetTimer()
 		for range b.N {
 			r.Seek(0, 0)
-			if rc, err := encodeMessage(r); err != nil {
+			if rc, err := encodeMessage(r, []string{}); err != nil {
 				panic(err)
 			} else {
 				io.Copy(io.Discard, rc)

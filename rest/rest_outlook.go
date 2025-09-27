@@ -1,7 +1,6 @@
 package rest
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -25,7 +24,7 @@ type GoogleProvider struct {
 
 type IProvider interface {
 	//init(config *oauth2.Config) error
-	SendMessage(io.Reader) error
+	SendMessage(io.Reader, []string) error
 }
 
 var (
@@ -44,37 +43,29 @@ var outlookOAuth2Config = &oauth2.Config{
 	Endpoint: microsoft.AzureADEndpoint("consumers"),
 }
 
-func (p *OutlookProvider) SendMessage(messageReader io.Reader) error {
-	return p.sendMessageRest(messageReader)
+func (p *OutlookProvider) SendMessage(messageReader io.Reader, args []string) error {
+	return p.sendMessageRest(messageReader, args)
 }
 
-func NewProviderOutlook(conf *oauth2.Config, sender string) (IProvider, error) {
+func NewProviderOutlook(conf *oauth2.Config, sender string, storage ConfigStorage) (IProvider, error) {
 	var p = &OutlookProvider{
 		provider: "outlook",
 		config:   conf,
 		sender:   sender,
 	}
-	_, err := p.getClient()
-	return p, err
-}
-
-func (p *OutlookProvider) getClient() (*http.Client, error) {
-	var (
-		st = SavedToken{provider: p.provider, id: p.sender}
-	)
+	st := SavedToken{provider: p.provider, id: p.sender, Storage: storage}
 	if err := st.Open(); err != nil {
 		return nil, err
 
 	}
-	ctx := context.Background()
 	// pass through token source to refresh
-	p.client = p.config.Client(ctx, st.token)
-	return p.client, nil
+	p.client = p.config.Client(storage.Context(), st.token)
+	return p, nil
 }
 
 // send from stdin
-func (p *OutlookProvider) sendMessageRest(messageReader io.Reader) error {
-	if encodedBuf, err := encodeMessage(messageReader); err != nil {
+func (p *OutlookProvider) sendMessageRest(messageReader io.Reader, args []string) error {
+	if encodedBuf, err := encodeMessage(messageReader, args); err != nil {
 		return err
 	} else if req, err := http.NewRequest("POST", MailSendEndpoint, encodedBuf); err != nil {
 		return err
