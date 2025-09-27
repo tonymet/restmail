@@ -23,6 +23,16 @@
             "args" : ["-provider", "gmail", "-authorize", "-f", "anthony.metzidis@gmail.com"]
         },
         {
+            "name": "setup outlook gcs",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "cwd": "${workspaceFolder}",
+            "program": "./cmd/restmail",
+            "args" : ["-provider", "outlook", "-storage", "gcs", "-authorize", "-f", "anthony.metzidis@gmail.com"],
+            "env": {"GCS_BUCKET": "tonym.us", "GCS_PREFIX": "test/restmail"}
+        },
+        {
             "name": "send outlook",
             "type": "go",
             "request": "launch",
@@ -40,6 +50,50 @@
             "program": "./cmd/restmail",
             "args" : ["-provider", "gmail", "-f", "anthony.metzidis@gmail.com" , "anthony.metzidis@gmail.com"],
             "console": "integratedTerminal"
+        },
+        {
+            "name": "send gmail gcs",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "cwd": "${workspaceFolder}",
+            "program": "./cmd/restmail",
+            "args" : ["-provider", "gmail", "-storage", "gcs", "-f", "anthony.metzidis@gmail.com" , "anthony.metzidis@gmail.com"],
+            "console": "integratedTerminal",
+            "env": {"GCS_BUCKET": "tonym.us", "GCS_PREFIX": "test/restmail"}
+        },
+        {
+            "name": "send outlook gcs",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "cwd": "${workspaceFolder}",
+            "program": "./cmd/restmail",
+            "args" : ["-provider", "outlook", "-storage", "gcs", "-f", "metonymet@outlook.com" , "anthony.metzidis@gmail.com"],
+            "console": "integratedTerminal",
+            "env": {"GCS_BUCKET": "tonym.us", "GCS_PREFIX": "test/restmail"}
+        },
+        {
+            "name": "containermail",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "cwd": "${workspaceFolder}",
+            "program": "./cmd/containermail",
+            "args" : ["-provider", "gmail", "-f", "anthony.metzidis@gmail.com" , "anthony.metzidis@gmail.com"],
+            "console": "integratedTerminal",
+            "env": {"GCS_BUCKET": "tonym.us", "GCS_PREFIX": "test/restmail"}
+        },
+        {
+            "name": "authorize gcs",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "cwd": "${workspaceFolder}",
+            "program": "./cmd/restmail",
+            "args" : ["-authorize", "-provider", "gmail", "-storage", "gcs",  "-f", "anthony.metzidis@gmail.com" , "anthony.metzidis@gmail.com"],
+            "console": "integratedTerminal",
+            "env": {"GCS_BUCKET": "tonym.us", "GCS_PREFIX": "test/restmail"}
         }
     ]
 }

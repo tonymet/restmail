@@ -3,7 +3,6 @@ package rest
 import (
 	"bytes"
 	"encoding/base64"
-	"flag"
 	"io"
 	"strings"
 )
@@ -42,11 +41,11 @@ func (mh messageHeader) mimeHeader() io.Reader {
 	return strings.NewReader(header.String())
 }
 
-func encodeMessage(in io.Reader) (io.ReadCloser, error) {
-	header := parseArgs(flag.Args())
+func encodeMessage(in io.Reader, args []string) (io.ReadCloser, error) {
+	header := parseArgs(args)
 	var encodedBuf = bytes.NewBuffer(make([]byte, 0, 2048))
 	messageEncoder := base64.NewEncoder(base64.StdEncoding, encodedBuf)
-	defer messageEncoder.Close()
+	defer messageEncoder.Close() //nolint: errcheck
 	if _, err := io.Copy(messageEncoder, header.mimeHeader()); err != nil {
 		panic(err)
 	}

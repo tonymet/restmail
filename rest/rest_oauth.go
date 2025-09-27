@@ -1,46 +1,37 @@
 package rest
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"os"
 	"path"
-	"path/filepath"
 
 	"golang.org/x/oauth2"
 )
 
 type SavedToken struct {
 	provider, id string
-	reader       io.ReadCloser
 	token        *oauth2.Token
 	config       *oauth2.Config
+	Storage      ConfigStorage
 }
 
-func (s SavedToken) Path() (string, error) {
-	if home, err := os.UserHomeDir(); err != nil {
-		panic(err)
-	} else {
-		return path.Join(home, fmt.Sprintf(".config/restmail/%s/%s.json", s.id, s.provider)), nil
-	}
+func PathToken(prefix, provider, id string) string {
+	return path.Join(prefix, fmt.Sprintf("token-%s-%s.json", provider, id))
 }
 
-func CreateInitialToken(oauthConfig *oauth2.Config, provider, sender string) {
-	var savedToken = SavedToken{provider: provider, id: sender, token: &oauth2.Token{}, config: oauthConfig}
+func CreateInitialToken(oauthConfig *oauth2.Config, provider, sender string, storage ConfigStorage) {
+	var savedToken = SavedToken{token: &oauth2.Token{}, config: oauthConfig, provider: provider, id: sender, Storage: storage}
 	if err := savedToken.Save(); err != nil {
 		panic(err)
 	}
 }
 
-func SetUpToken(oauthConfig *oauth2.Config, provider, sender string) {
+func OAuthFlowToken(oauthConfig *oauth2.Config, provider, sender string, storage ConfigStorage) {
 	aHandler := newCallbackHandler()
-	if savedToken, err := aHandler.getCredentials(oauthConfig); err != nil {
+	if oauthToken, err := aHandler.getCredentials(oauthConfig); err != nil {
 		panic(err)
 	} else {
-		savedToken.provider = provider
-		savedToken.id = sender
+		savedToken := &SavedToken{token: oauthToken, provider: provider, id: sender, Storage: storage}
 		if err := savedToken.Save(); err != nil {
 			panic(err)
 		}
@@ -48,41 +39,36 @@ func SetUpToken(oauthConfig *oauth2.Config, provider, sender string) {
 }
 
 func (s *SavedToken) Open() error {
+	// update to operate on reader
 	var tokenVar oauth2.Token
-	if configPath, err := s.Path(); err != nil {
-		panic(err)
-	} else if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
-		panic(err)
-	} else if s.reader, err = os.Open(configPath); err != nil {
-		panic(err)
-	} else {
-		defer s.reader.Close()
-		if jsonMem, err := io.ReadAll(s.reader); err != nil {
-			panic(err)
-		} else if err := json.Unmarshal(jsonMem, &tokenVar); err != nil {
-			panic(err)
-		}
+	reader, err := s.Storage.GetReader()
+	if err != nil {
+		return err
+	}
+	defer reader.Close() //nolint: errCheck
+	decoder := json.NewDecoder(reader)
+	err = decoder.Decode(&tokenVar)
+	if err != nil {
+		return err
 	}
 	s.token = &tokenVar
 	return nil
 }
 
 func (s *SavedToken) Save() error {
-	if tokenJson, err := json.Marshal(*(s.token)); err != nil {
-		panic(err)
-	} else if configPath, err := s.Path(); err != nil {
-		panic(err)
-	} else if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
-		panic(err)
+	if f, err := s.Storage.GetWriter(); err != nil {
+		return err
 	} else {
-		return os.WriteFile(configPath, tokenJson, 0600)
+		defer f.Close() //nolint: errCheck
+		enc := json.NewEncoder(f)
+		return enc.Encode(*(s.token))
 	}
 }
 
 // wrap oauth2.Conf.TokenSource to handle saving the token when it changes
 func (s *SavedToken) Token() (*oauth2.Token, error) {
 	oldToken := s.token
-	ts := s.config.TokenSource(context.Background(), oldToken) // this refreshes the token if needed
+	ts := s.config.TokenSource(s.Storage.Context(), oldToken) // this refreshes the token if needed
 	newToken, err := ts.Token()
 	if err != nil {
 		return newToken, err

@@ -1,7 +1,6 @@
 package rest
 
 import (
-	"context"
 	"io"
 	"net/http"
 
@@ -22,27 +21,26 @@ var googleOAuth2Config = &oauth2.Config{
 	Endpoint: google.Endpoint,
 }
 
-func (p *GoogleProvider) SendMessage(messageReader io.Reader) error {
-	if encodedMessage, err := encodeMessage(messageReader); err != nil {
-		panic(err)
+func (p *GoogleProvider) SendMessage(messageReader io.Reader, args []string) error {
+	if encodedMessage, err := encodeMessage(messageReader, args); err != nil {
+		return err
 	} else if _, err := p.sendMessageRest(encodedMessage); err != nil {
-		panic(err)
+		return err
 	}
 	return nil
 }
 
-func NewProviderGoogle(provider, sender string) (IProvider, error) {
+func NewProviderGoogle(provider, sender string, storage ConfigStorage) (IProvider, error) {
 	var (
 		p   = &GoogleProvider{config: googleOAuth2Config}
 		err error
+		st  = &SavedToken{config: googleOAuth2Config, provider: provider, id: sender, Storage: storage}
 	)
-	ctx := context.Background()
-	var st = &SavedToken{provider: provider, id: sender, config: googleOAuth2Config}
 	if err := st.Open(); err != nil {
 		return nil, err
 	}
 	// use refresh tokensource
-	if p.srv, err = gmail.NewService(ctx, option.WithTokenSource(st)); err != nil {
+	if p.srv, err = gmail.NewService(storage.Context(), option.WithTokenSource(st)); err != nil {
 		panic(err)
 	}
 	return p, nil
@@ -59,6 +57,6 @@ func (p *GoogleProvider) sendMessageRest(bodyReader io.ReadCloser) (*http.Respon
 		if err != nil {
 			return &http.Response{}, err
 		}
-		return &http.Response{StatusCode: googleResponse.ServerResponse.HTTPStatusCode, Header: googleResponse.ServerResponse.Header}, err
+		return &http.Response{StatusCode: googleResponse.HTTPStatusCode, Header: googleResponse.Header}, err
 	}
 }

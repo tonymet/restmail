@@ -1,0 +1,9 @@
+steps:
+  # Build the Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'us-west1-docker.pkg.dev/$PROJECT_ID/tonym-us/containermail', '.']
+  # Push the Docker image to Google Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'us-west1-docker.pkg.dev/$PROJECT_ID/tonym-us/containermail']
+images:
+  - 'us-west1-docker.pkg.dev/$PROJECT_ID/tonym-us/containermail'

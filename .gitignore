@@ -3,3 +3,4 @@ client_secret*
 traffic.mitm
 *pyc
 __debug_bin*
+.env*
