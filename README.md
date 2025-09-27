@@ -52,6 +52,51 @@ echo "subject: test subject\n\ntest message" | restmail -f "${FROM}" -provider g
         smtpServerOption = gmail
 ```
 
+## Running Via Container & Cloud Storage
+
+restmail can be run via container with Google Cloud storage
+
+### Build 
+```
+ docker build . -t containermail 
+```
+
+### Env  & Permissions
+```
+GCS_PREFIX=test/restmail
+GCS_BUCKET=YOUR_BUCKET
+```
+GCS Perms will load using APP Default Credentials.  Be sure to authorize `gcloud auth login` before proceeding.
+The user will need role/Storage Object User for saving & loading the tokens
+
+### Setup OAuth Config & Token
+
+re-run the OAuth Config with `-storage gcs`. This will save config to your bucket
+
+```
+FROM=your.name@gmail.com
+CLIENT_ID=xxxxxx
+CLIENT_SECRET=yyyy
+restmail -configClient -storage gcs -provider gmail -clientId "${CLIENT_ID}" \ 
+   -clientSecret "${CLIENT_SECRET}" -f "${FROM}"
+```
+
+re-run the auth step to save the token. this only needs doing once (refresh token will save)
+
+```
+FROM=your.name@gmail.com
+restmail -authorize -storage gcs -provider gmail -f "${FROM}"
+```
+
+## Launch the Container
+
+You can run the container on cloud run with args `-provider $PROVIDER -f $FROM -m "$MESSAGE" $TO_ADDR`
+
+
+
+
+
+
 ## Related Projects
 * [sendgmail & gmail-oauth-tools](https://github.com/google/gmail-oauth2-tools) send mail via sendmail-compatible
 CLI to google via SMTP
