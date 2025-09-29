@@ -19,11 +19,9 @@ func PathToken(prefix, provider, id string) string {
 	return path.Join(prefix, fmt.Sprintf("token-%s-%s.json", provider, id))
 }
 
-func CreateInitialToken(oauthConfig *oauth2.Config, provider, sender string, storage ConfigStorage) {
+func CreateInitialToken(oauthConfig *oauth2.Config, provider, sender string, storage ConfigStorage) error {
 	var savedToken = SavedToken{token: &oauth2.Token{}, config: oauthConfig, provider: provider, id: sender, Storage: storage}
-	if err := savedToken.Save(); err != nil {
-		panic(err)
-	}
+	return savedToken.Save()
 }
 
 func OAuthFlowToken(oauthConfig *oauth2.Config, provider, sender string, storage ConfigStorage) {

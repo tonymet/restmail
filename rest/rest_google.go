@@ -51,7 +51,7 @@ func NewProviderGoogle(provider, sender string, storage ConfigStorage) (IProvide
 	return p, nil
 }
 
-func (p *GoogleProvider) sendMessageRest(bodyReader io.ReadCloser) (*http.Response, error) {
+func (p *GoogleProvider) sendMessageRest(bodyReader io.Reader) (*http.Response, error) {
 	if requestBody, err := io.ReadAll(bodyReader); err != nil {
 		panic(err)
 	} else {
