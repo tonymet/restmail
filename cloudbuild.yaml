@@ -1,9 +1,13 @@
 steps:
-  # Build the Docker image
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'us-west1-docker.pkg.dev/$PROJECT_ID/tonym-us/containermail', '.']
-  # Push the Docker image to Google Artifact Registry
+    args: ['build', '-t', 'us-west1-docker.pkg.dev/$PROJECT_ID/tonym-us/restmail', '.']
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'us-west1-docker.pkg.dev/$PROJECT_ID/tonym-us/containermail']
+    args: ['push', 'us-west1-docker.pkg.dev/$PROJECT_ID/tonym-us/restmail']
 images:
-  - 'us-west1-docker.pkg.dev/$PROJECT_ID/tonym-us/containermail'
+  - 'us-west1-docker.pkg.dev/$PROJECT_ID/tonym-us/restmail'
+availableSecrets:
+  secretManager:
+  - versionName: projects/$PROJECT_ID/secrets/GH_TOKEN/versions/latest
+    env: 'GITHUB_TOKEN'
+options:
+  logging: CLOUD_LOGGING_ONLY

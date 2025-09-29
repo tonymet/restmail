@@ -4,3 +4,5 @@ traffic.mitm
 *pyc
 __debug_bin*
 .env*
+# Added by goreleaser init:
+dist/
