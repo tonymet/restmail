@@ -59,13 +59,13 @@ func (h *callbackHandler) getCredentials(oauthConfig *oauth2.Config) (*oauth2.To
 	url := oauthConfig.AuthCodeURL(h.state, oauth2.AccessTypeOffline, oauth2.ApprovalForce, oauth2.S256ChallengeOption(verifier))
 	code, state, err := h.authHandler(url, oauthConfig.ClientID)
 	if err != nil {
-		panic(err)
+		return &oauth2.Token{}, err
 	}
 	if state != h.state {
-		panic(fmt.Errorf("state mismatch expect %s, received %s", h.state, state))
+		return &oauth2.Token{}, fmt.Errorf("state mismatch expect %s, received %s", h.state, state)
 	}
 	if tok, err := oauthConfig.Exchange(ctx, code, oauth2.VerifierOption(verifier)); err != nil {
-		panic(err)
+		return &oauth2.Token{}, err
 	} else {
 		return tok, nil
 	}

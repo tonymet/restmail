@@ -96,8 +96,6 @@ func setupTest() *http.Client {
 			return (&net.Dialer{}).DialContext(ctx, network, tsMicrosoft.Listener.Addr().String())
 		},
 		DialTLSContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
-			// Redirect all connections to test server's listener
-			// Redirect all connections to test server's listener
 			var ts *httptest.Server
 			switch addr {
 			case "login.microsoftonline.com:443":

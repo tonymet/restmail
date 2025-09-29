@@ -172,9 +172,11 @@ func RunApp(c *AppConfigContainer, args []string) {
 		}
 		sConfig.ConfigParams = c.InitConfig
 		err := sConfig.Save()
+		if err != nil {
+			log.Fatal(err)
+		}
 		initConfig := oauth2.Config{ClientID: sConfig.ConfigParams.Web.ClientID}
-		CreateInitialToken(&initConfig, c.Provider, c.Sender, storageToken)
-
+		err = CreateInitialToken(&initConfig, c.Provider, c.Sender, storageToken)
 		if err != nil {
 			log.Fatal(err)
 		}

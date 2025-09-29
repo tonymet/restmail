@@ -41,16 +41,16 @@ func (mh messageHeader) mimeHeader() io.Reader {
 	return strings.NewReader(header.String())
 }
 
-func encodeMessage(in io.Reader, args []string) (io.ReadCloser, error) {
+func encodeMessage(in io.Reader, args []string) (io.Reader, error) {
 	header := parseArgs(args)
 	var encodedBuf = bytes.NewBuffer(make([]byte, 0, 2048))
 	messageEncoder := base64.NewEncoder(base64.StdEncoding, encodedBuf)
 	defer messageEncoder.Close() //nolint: errcheck
 	if _, err := io.Copy(messageEncoder, header.mimeHeader()); err != nil {
-		panic(err)
+		return nil, err
 	}
 	if _, err := io.Copy(messageEncoder, in); err != nil {
-		panic(err)
+		return nil, err
 	}
-	return io.NopCloser(encodedBuf), nil
+	return encodedBuf, nil
 }
