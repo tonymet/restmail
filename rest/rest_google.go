@@ -39,9 +39,14 @@ func NewProviderGoogle(provider, sender string, storage ConfigStorage) (IProvide
 	if err := st.Open(); err != nil {
 		return nil, err
 	}
-	// use refresh tokensource
-	if p.srv, err = gmail.NewService(storage.Context(), option.WithTokenSource(st)); err != nil {
-		panic(err)
+	// use our tokensource and override httpClient for testing
+	opts := make([]option.ClientOption, 0)
+	opts = append(opts, option.WithTokenSource(st))
+	if hc, ok := storage.Context().Value(oauth2.HTTPClient).(*http.Client); ok {
+		opts = append(opts, option.WithHTTPClient(hc))
+	}
+	if p.srv, err = gmail.NewService(storage.Context(), opts...); err != nil {
+		return p, err
 	}
 	return p, nil
 }
