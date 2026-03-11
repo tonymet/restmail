@@ -3,6 +3,8 @@ client_secret*
 traffic.mitm
 *pyc
 __debug_bin*
+**/__debug_bin*
+cmd/restmail/__debug_bin*
 .env*
 # Added by goreleaser init:
 dist/
