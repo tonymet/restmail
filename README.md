@@ -1,5 +1,8 @@
 # restmail -- sendmail for email rest APIs
 
+[![Go Test](https://github.com/tonymet/restmail/actions/workflows/main.yaml/badge.svg)](https://github.com/tonymet/restmail/actions/workflows/main.yaml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/tonymet/restmail)](https://goreportcard.com/report/github.com/tonymet/restmail)
+
 restmail is a sendmail-compatible CLI using gmail & outlook rest APIs. It can be used
 for email automation, notifications and with `git send-mail` for sharing patches. 
 
@@ -100,3 +103,6 @@ You can run the container on cloud run with args `-provider $PROVIDER -f $FROM -
 ## Related Projects
 * [sendgmail & gmail-oauth-tools](https://github.com/google/gmail-oauth2-tools) send mail via sendmail-compatible
 CLI to google via SMTP
+
+## Quality Check
+* [Go Report Card](https://goreportcard.com/report/github.com/tonymet/restmail)

@@ -1,24 +1,31 @@
-name: goreleaser
+name: CI
 on:
   push:
+    branches:
+      - main
+      - master
     tags:
       - '*'
 jobs:
-  release:
-    runs-on: ubuntu-latest
+  test-and-release:
+    runs-on: ubuntu-slim
     permissions:
-      contents: write # REQUIRED for creating the GitHub Release
+      contents: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
-          fetch-depth: 0 # IMPORTANT for GoReleaser to work properly
+          fetch-depth: 0
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: 'go.mod'
+      - name: Run tests
+        run: go test -v ./...
       - name: Run GoReleaser
+        if: startsWith(github.ref, 'refs/tags/')
         uses: goreleaser/goreleaser-action@v6
         with:
           args: release --clean
         env:
-          # This is the built-in token provided by GitHub Actions
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
