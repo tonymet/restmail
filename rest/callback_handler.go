@@ -16,17 +16,20 @@ type callbackHandler struct {
 	state    string
 }
 
-// basic handler on / for receiving code
 func (h *callbackHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
 	if query.Has("error") {
 		log.Printf("Oauth error: %s\n", query.Get("error"))
+		http.Error(w, fmt.Sprintf("OAuth Error: %s", query.Get("error")), http.StatusBadRequest)
+		return
+	}
+	if !query.Has("state") || query.Get("state") != h.state {
+		log.Printf("Oauth state mismatch: expect %s, received %s\n", h.state, query.Get("state"))
+		http.Error(w, "State mismatch error. Potential CSRF detected.", http.StatusForbidden)
 		return
 	}
 	if !(query.Has("code")) {
-		if _, err := w.Write([]byte("expecting query param: code")); err != nil {
-			panic(err)
-		}
+		http.Error(w, "expecting query param: code", http.StatusBadRequest)
 		return
 	}
 	code := query.Get("code")
