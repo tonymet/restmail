@@ -36,10 +36,10 @@ var token = `{
 }
 `
 
-var configExample = `{"web":{"client_id":"client-xyz",
-"project_id":"","auth_uri":"","token_uri":"","auth_provider_x509_cert_url":"",
-"client_secret":"secretexyz","redirect_uris":null,"javascript_origins":null,"scopes":null}}
-`
+// var configExample = `{"web":{"client_id":"client-xyz",
+// "project_id":"","auth_uri":"","token_uri":"","auth_provider_x509_cert_url":"",
+// "client_secret":"secretexyz","redirect_uris":null,"javascript_origins":null,"scopes":null}}
+// `
 
 // DiscardCloser wraps an io.Writer and provides a no-op Close method
 type DiscardCloser struct {

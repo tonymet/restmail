@@ -33,7 +33,7 @@ func (h *callbackHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	code := query.Get("code")
-	if _, err := w.Write([]byte(fmt.Sprintf("code: %s\n", code))); err != nil {
+	if _, err := fmt.Fprintf(w, "code: %s\n", code); err != nil {
 		panic(err)
 	}
 	h.codeChan <- code
