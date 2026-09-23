@@ -22,7 +22,11 @@ var googleOAuth2Config = &oauth2.Config{
 }
 
 func (p *GoogleProvider) SendMessage(messageReader io.Reader, args []string) error {
-	if encodedMessage, err := encodeMessage(messageReader, args); err != nil {
+	return p.SendMessageOpt(messageReader, args, false)
+}
+
+func (p *GoogleProvider) SendMessageOpt(messageReader io.Reader, args []string, parseHeaders bool) error {
+	if encodedMessage, err := encodeMessageOpt(messageReader, args, parseHeaders); err != nil {
 		return err
 	} else if _, err := p.sendMessageRest(encodedMessage); err != nil {
 		return err

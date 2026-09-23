@@ -25,6 +25,7 @@ type GoogleProvider struct {
 type IProvider interface {
 	//init(config *oauth2.Config) error
 	SendMessage(io.Reader, []string) error
+	SendMessageOpt(io.Reader, []string, bool) error
 }
 
 var (
@@ -44,7 +45,11 @@ var outlookOAuth2Config = &oauth2.Config{
 }
 
 func (p *OutlookProvider) SendMessage(messageReader io.Reader, args []string) error {
-	return p.sendMessageRest(messageReader, args)
+	return p.SendMessageOpt(messageReader, args, false)
+}
+
+func (p *OutlookProvider) SendMessageOpt(messageReader io.Reader, args []string, parseHeaders bool) error {
+	return p.sendMessageRest(messageReader, args, parseHeaders)
 }
 
 func NewProviderOutlook(conf *oauth2.Config, sender string, storage ConfigStorage) (IProvider, error) {
@@ -64,8 +69,8 @@ func NewProviderOutlook(conf *oauth2.Config, sender string, storage ConfigStorag
 }
 
 // send from stdin
-func (p *OutlookProvider) sendMessageRest(messageReader io.Reader, args []string) error {
-	if encodedBuf, err := encodeMessage(messageReader, args); err != nil {
+func (p *OutlookProvider) sendMessageRest(messageReader io.Reader, args []string, parseHeaders bool) error {
+	if encodedBuf, err := encodeMessageOpt(messageReader, args, parseHeaders); err != nil {
 		return err
 	} else if req, err := http.NewRequest("POST", MailSendEndpoint, encodedBuf); err != nil {
 		return err

@@ -55,6 +55,14 @@ echo "subject: test subject\n\ntest message" | restmail -f "${FROM}" -provider g
         smtpServerOption = gmail
 ```
 
+## Debian devscripts configuration (`bts`)
+
+To use `restmail` with Debian tools like `bts` from `devscripts`, configure `~/.devscripts`:
+
+```sh
+BTS_SENDMAIL_COMMAND="/home/USERNAME/go/bin/restmail -t"
+```
+
 ## Running Via Container & Cloud Storage
 
 restmail can be run via container with Google Cloud storage

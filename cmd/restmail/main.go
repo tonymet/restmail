@@ -18,6 +18,7 @@ func init() {
 	flag.StringVar(&appConfig.Sender, "f", "", "Specifies the sender's email address.")
 	flag.BoolVar(&appConfig.Authorize, "authorize", false, "Set up the OAuth2 authorization token before sending mail")
 	flag.BoolVar(&dummyI, "i", true, "Dummy flag for compatibility with sendmail.")
+	flag.BoolVar(&appConfig.ParseHeaders, "t", false, "Read message for recipients (To:, Cc:, Bcc:).")
 	flag.StringVar(&appConfig.Provider, "provider", "gmail", "gmail|outlook -- which provider to use")
 	flag.BoolVar(&appConfig.ConfigClient, "configClient", false, "start initial client config")
 	flag.StringVar(&appConfig.Storage, "storage", "os", "os|gcs Where to save config")
@@ -32,6 +33,16 @@ func main() {
 		appConfig.MessageReader = strings.NewReader(appConfig.Message)
 	} else {
 		appConfig.MessageReader = os.Stdin
+	}
+
+	if appConfig.ParseHeaders {
+		header, reader, err := rest.ParseMessageHeaders(appConfig.MessageReader)
+		if err == nil {
+			appConfig.MessageReader = reader
+			if appConfig.Sender == "" && header.From != "" {
+				appConfig.Sender = header.From
+			}
+		}
 	}
 
 	rest.RunApp(&appConfig, flag.Args())

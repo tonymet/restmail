@@ -19,6 +19,7 @@ type AppConfigContainer struct {
 	Provider, Sender, Storage string
 	InitConfig                OAuthConfigJSON
 	ConfigClient, Authorize   bool
+	ParseHeaders              bool
 	Message                   string
 	MessageReader             io.Reader
 }
@@ -155,6 +156,15 @@ func setupStorage(ctx context.Context, c AppConfigContainer) (storageConfig Conf
 func RunApp(c *AppConfigContainer, args []string) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
+	if c.ParseHeaders {
+		if c.Sender == "" {
+			header, reader, err := ParseMessageHeaders(c.MessageReader)
+			if err == nil {
+				c.MessageReader = reader
+				c.Sender = header.From
+			}
+		}
+	}
 	if !strings.ContainsRune(c.Sender, '@') {
 		log.Fatalf("error: sender should be an email")
 	}
@@ -203,7 +213,7 @@ func RunApp(c *AppConfigContainer, args []string) {
 	if c.Authorize {
 		OAuthFlowToken(oauthConfig, c.Provider, c.Sender, storageToken)
 		return
-	} else if err := p.SendMessage(c.MessageReader, args); err != nil {
+	} else if err := p.SendMessageOpt(c.MessageReader, args, c.ParseHeaders); err != nil {
 		log.Fatal(err)
 	}
 }

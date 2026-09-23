@@ -2,8 +2,10 @@ package rest
 
 import (
 	"bytes"
+	"encoding/base64"
 	"io"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -153,5 +155,56 @@ func TestEncodeMessage(t *testing.T) {
 	// Let's just verify it's NOT empty.
 	if len(got) == 0 {
 		t.Error("encoded message is empty")
+	}
+}
+
+func TestParseMessageHeaders(t *testing.T) {
+	raw := "From: sender@example.com\r\nTo: alice@example.com, Bob <bob@example.com>\r\nCc: carol@example.com\r\nBcc: dave@example.com\r\nSubject: Test\r\n\r\nBody text"
+	mh, reader, err := ParseMessageHeaders(strings.NewReader(raw))
+	if err != nil {
+		t.Fatalf("ParseMessageHeaders failed: %v", err)
+	}
+
+	if mh.From != "sender@example.com" {
+		t.Errorf("expected From sender@example.com, got %s", mh.From)
+	}
+	if !reflect.DeepEqual(mh.To, []string{"alice@example.com", "bob@example.com"}) {
+		t.Errorf("expected To [alice@example.com bob@example.com], got %v", mh.To)
+	}
+	if !reflect.DeepEqual(mh.Cc, []string{"carol@example.com"}) {
+		t.Errorf("expected Cc [carol@example.com], got %v", mh.Cc)
+	}
+	if !reflect.DeepEqual(mh.Bcc, []string{"dave@example.com"}) {
+		t.Errorf("expected Bcc [dave@example.com], got %v", mh.Bcc)
+	}
+
+	restored, err := io.ReadAll(reader)
+	if err != nil {
+		t.Fatalf("reading restored reader failed: %v", err)
+	}
+	if string(restored) != raw {
+		t.Errorf("reader contents modified: got %q, expected %q", string(restored), raw)
+	}
+}
+
+func TestEncodeMessageOptParseHeaders(t *testing.T) {
+	raw := "From: sender@example.com\r\nTo: alice@example.com\r\nSubject: Hi\r\n\r\nHello"
+	reader, err := encodeMessageOpt(strings.NewReader(raw), nil, true)
+	if err != nil {
+		t.Fatalf("encodeMessageOpt failed: %v", err)
+	}
+
+	encoded, err := io.ReadAll(reader)
+	if err != nil {
+		t.Fatalf("read failed: %v", err)
+	}
+
+	decoded, err := base64.StdEncoding.DecodeString(string(encoded))
+	if err != nil {
+		t.Fatalf("base64 decode failed: %v", err)
+	}
+
+	if string(decoded) != raw {
+		t.Errorf("decoded message mismatch: got %q, expected %q", string(decoded), raw)
 	}
 }
