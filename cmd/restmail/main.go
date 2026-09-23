@@ -11,6 +11,8 @@ import (
 
 var (
 	dummyI    bool
+	dummyOi   bool
+	dummyOem  bool
 	appConfig rest.AppConfigContainer
 )
 
@@ -18,6 +20,8 @@ func init() {
 	flag.StringVar(&appConfig.Sender, "f", "", "Specifies the sender's email address.")
 	flag.BoolVar(&appConfig.Authorize, "authorize", false, "Set up the OAuth2 authorization token before sending mail")
 	flag.BoolVar(&dummyI, "i", true, "Dummy flag for compatibility with sendmail.")
+	flag.BoolVar(&dummyOi, "oi", true, "Dummy flag for compatibility with sendmail (ignore dots on lines by themselves).")
+	flag.BoolVar(&dummyOem, "oem", true, "Dummy flag for compatibility with sendmail (mail back errors).")
 	flag.BoolVar(&appConfig.ParseHeaders, "t", false, "Read message for recipients (To:, Cc:, Bcc:).")
 	flag.StringVar(&appConfig.Provider, "provider", "gmail", "gmail|outlook -- which provider to use")
 	flag.BoolVar(&appConfig.ConfigClient, "configClient", false, "start initial client config")
