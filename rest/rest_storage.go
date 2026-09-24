@@ -194,26 +194,33 @@ func RunApp(c *AppConfigContainer, args []string) {
 	}
 
 	if oauthConfig, err = OpenConfig(storageConfig, c.Provider); err != nil {
-		log.Fatal(err)
+		log.Printf("error reading config: %v", err)
+		os.Exit(ExitOSErr)
 	}
 	switch c.Provider {
 	case "outlook":
 		p, err = NewProviderOutlook(oauthConfig, c.Sender, storageToken)
 		if err != nil {
 			log.Printf("error accessing token: %s", err)
+			os.Exit(ExitOSErr)
 		}
 	case "gmail":
 		p, err = NewProviderGoogle(c.Provider, c.Sender, storageToken)
 		if err != nil {
 			log.Printf("error accessing token: %s", err)
+			os.Exit(ExitOSErr)
 		}
 	default:
 		flag.PrintDefaults()
+		os.Exit(ExitUsage)
 	}
 	if c.Authorize {
 		OAuthFlowToken(oauthConfig, c.Provider, c.Sender, storageToken)
 		return
 	} else if err := p.SendMessageOpt(c.MessageReader, args, c.ParseHeaders); err != nil {
-		log.Fatal(err)
+		exitCode := ClassifyDeliveryError(err)
+		log.Printf("delivery error (exiting %d): %v", exitCode, err)
+		os.Exit(exitCode)
 	}
+	os.Exit(ExitOk)
 }

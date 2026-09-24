@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"errors"
 	"io"
 	"net/http"
 
@@ -8,6 +9,7 @@ import (
 	"golang.org/x/oauth2/google"
 
 	"google.golang.org/api/gmail/v1"
+	"google.golang.org/api/googleapi"
 	"google.golang.org/api/option"
 )
 
@@ -55,6 +57,39 @@ func NewProviderGoogle(provider, sender string, storage ConfigStorage) (IProvide
 	return p, nil
 }
 
+// GoogleAPIError wraps a googleapi.Error and implements ExitCoder and StatusCode.
+type GoogleAPIError struct {
+	Err *googleapi.Error
+}
+
+func (e *GoogleAPIError) StatusCode() int {
+	if e.Err != nil {
+		return e.Err.Code
+	}
+	return 0
+}
+
+func (e *GoogleAPIError) ExitCode() int {
+	if e.Err == nil {
+		return ExitOk
+	}
+	if e.Err.Code == http.StatusTooManyRequests || e.Err.Code >= 500 {
+		return ExitTempFail
+	}
+	if e.Err.Code >= 400 && e.Err.Code < 500 {
+		return ExitUnavailable
+	}
+	return ExitTempFail
+}
+
+func (e *GoogleAPIError) Error() string {
+	return e.Err.Error()
+}
+
+func (e *GoogleAPIError) Unwrap() error {
+	return e.Err
+}
+
 func (p *GoogleProvider) sendMessageRest(bodyReader io.Reader) (*http.Response, error) {
 	if requestBody, err := io.ReadAll(bodyReader); err != nil {
 		panic(err)
@@ -64,6 +99,10 @@ func (p *GoogleProvider) sendMessageRest(bodyReader io.Reader) (*http.Response, 
 		}
 		googleResponse, err := p.srv.Users.Messages.Send("me", gmsg).Do()
 		if err != nil {
+			var gErr *googleapi.Error
+			if errors.As(err, &gErr) {
+				return &http.Response{}, &GoogleAPIError{Err: gErr}
+			}
 			return &http.Response{}, err
 		}
 		return &http.Response{StatusCode: googleResponse.HTTPStatusCode, Header: googleResponse.Header}, err

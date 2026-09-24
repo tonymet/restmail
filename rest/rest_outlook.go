@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -68,6 +69,54 @@ func NewProviderOutlook(conf *oauth2.Config, sender string, storage ConfigStorag
 	return p, nil
 }
 
+// GraphError represents an error returned by the Microsoft Graph API.
+type GraphError struct {
+	HTTPStatusCode int
+	Code           string `json:"code"`
+	Message        string `json:"message"`
+}
+
+func (e *GraphError) StatusCode() int {
+	return e.HTTPStatusCode
+}
+
+func (e *GraphError) ExitCode() int {
+	if e.HTTPStatusCode == http.StatusTooManyRequests || e.HTTPStatusCode >= 500 {
+		return ExitTempFail
+	}
+	if e.HTTPStatusCode >= 400 && e.HTTPStatusCode < 500 {
+		return ExitUnavailable
+	}
+	return ExitTempFail
+}
+
+func (e *GraphError) Error() string {
+	if e.Code != "" || e.Message != "" {
+		return fmt.Sprintf("Graph API error (HTTP %d, %s): %s", e.HTTPStatusCode, e.Code, e.Message)
+	}
+	return fmt.Sprintf("Graph API error: statusCode = %d", e.HTTPStatusCode)
+}
+
+func parseGraphError(res *http.Response) *GraphError {
+	graphErr := &GraphError{HTTPStatusCode: res.StatusCode}
+	bodyBytes, err := io.ReadAll(res.Body)
+	if err != nil || len(bodyBytes) == 0 {
+		return graphErr
+	}
+
+	var parsed struct {
+		Error struct {
+			Code    string `json:"code"`
+			Message string `json:"message"`
+		} `json:"error"`
+	}
+	if err := json.Unmarshal(bodyBytes, &parsed); err == nil && (parsed.Error.Code != "" || parsed.Error.Message != "") {
+		graphErr.Code = parsed.Error.Code
+		graphErr.Message = parsed.Error.Message
+	}
+	return graphErr
+}
+
 // send from stdin
 func (p *OutlookProvider) sendMessageRest(messageReader io.Reader, args []string, parseHeaders bool) error {
 	if encodedBuf, err := encodeMessageOpt(messageReader, args, parseHeaders); err != nil {
@@ -76,10 +125,13 @@ func (p *OutlookProvider) sendMessageRest(messageReader io.Reader, args []string
 		return err
 	} else {
 		req.Header.Set("Content-type", "text/plain")
-		if res, err := p.client.Do(req); err != nil {
+		res, err := p.client.Do(req)
+		if err != nil {
 			return err
-		} else if res.StatusCode > 299 {
-			return fmt.Errorf("error sending mail: statusCode = %d", res.StatusCode)
+		}
+		defer res.Body.Close()
+		if res.StatusCode > 299 {
+			return parseGraphError(res)
 		}
 	}
 	return nil

@@ -4,8 +4,8 @@ import "fmt"
 
 // Test program outputting headers (like those produced by bts/reportbug) followed by long-line body text.
 func main() {
-	headers := "From: test-sender@example.com\n" +
-		"To: test-recipient@example.com\n" +
+	headers := "From: anthony.metzidis@gmail.com\n" +
+		"To: anthony.metzidis+103@gmail.com\n" +
 		"Subject: Bug report with long lines test\n" +
 		"X-Debian-PR-Package: restmail\n" +
 		"X-Custom-Test-Header: custom-value-preserved\n\n"
