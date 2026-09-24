@@ -84,6 +84,8 @@ func ParseMessageHeaders(in io.Reader) (MessageHeader, io.Reader, error) {
 
 func (mh messageHeader) mimeHeader() io.Reader {
 	var header strings.Builder
+	header.WriteString("MIME-Version: 1.0" + MIME_LINE)
+	header.WriteString("Content-Transfer-Encoding: quoted-printable" + MIME_LINE)
 	header.WriteString("To: " + strings.Join(mh.to, ",") + MIME_LINE)
 	if len(mh.bcc) > 0 {
 		header.WriteString("Bcc: " + strings.Join(mh.bcc, ",") + MIME_LINE)
@@ -110,8 +112,28 @@ func encodeMessageOpt(in io.Reader, args []string, parseHeaders bool) (io.Reader
 			return nil, err
 		}
 		header = parsedHdr
-		// The message from stdin already contains mime headers; send reader as is.
-		finalPayload = reader
+
+		// Check if MIME-Version or Content-Transfer-Encoding are present in existing headers.
+		// If not present, inject them without overwriting or interrupting existing headers.
+		raw, err := io.ReadAll(reader)
+		if err != nil {
+			return nil, err
+		}
+		msg, err := mail.ReadMessage(bytes.NewReader(raw))
+		var injected strings.Builder
+		if err == nil {
+			if msg.Header.Get("Mime-Version") == "" {
+				injected.WriteString("MIME-Version: 1.0" + MIME_LINE)
+			}
+			if msg.Header.Get("Content-Transfer-Encoding") == "" {
+				injected.WriteString("Content-Transfer-Encoding: quoted-printable" + MIME_LINE)
+			}
+		}
+		if injected.Len() > 0 {
+			finalPayload = io.MultiReader(strings.NewReader(injected.String()), bytes.NewReader(raw))
+		} else {
+			finalPayload = bytes.NewReader(raw)
+		}
 	} else {
 		parsedArgs := parseArgs(args)
 		header = MessageHeader{

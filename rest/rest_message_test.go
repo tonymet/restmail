@@ -100,7 +100,7 @@ func TestMimeHeader(t *testing.T) {
 				cc:  []string{"cc1@example.com"},
 				bcc: []string{"bcc1@example.com"},
 			},
-			expected: "To: to1@example.com,to2@example.com\r\nBcc: bcc1@example.com\r\nCc: cc1@example.com\r\n",
+			expected: "MIME-Version: 1.0\r\nContent-Transfer-Encoding: quoted-printable\r\nTo: to1@example.com,to2@example.com\r\nBcc: bcc1@example.com\r\nCc: cc1@example.com\r\n",
 		},
 		{
 			name: "To only",
@@ -109,7 +109,7 @@ func TestMimeHeader(t *testing.T) {
 				cc:  []string{},
 				bcc: []string{},
 			},
-			expected: "To: to1@example.com\r\n",
+			expected: "MIME-Version: 1.0\r\nContent-Transfer-Encoding: quoted-printable\r\nTo: to1@example.com\r\n",
 		},
 		{
 			name: "Empty",
@@ -118,7 +118,7 @@ func TestMimeHeader(t *testing.T) {
 				cc:  []string{},
 				bcc: []string{},
 			},
-			expected: "To: \r\n",
+			expected: "MIME-Version: 1.0\r\nContent-Transfer-Encoding: quoted-printable\r\nTo: \r\n",
 		},
 	}
 
@@ -204,7 +204,20 @@ func TestEncodeMessageOptParseHeaders(t *testing.T) {
 		t.Fatalf("base64 decode failed: %v", err)
 	}
 
-	if string(decoded) != raw {
-		t.Errorf("decoded message mismatch: got %q, expected %q", string(decoded), raw)
+	expected := "MIME-Version: 1.0\r\nContent-Transfer-Encoding: quoted-printable\r\n" + raw
+	if string(decoded) != expected {
+		t.Errorf("decoded message mismatch: got %q, expected %q", string(decoded), expected)
+	}
+
+	// Verify existing headers are not overwritten if already present
+	rawWithHeaders := "MIME-Version: 1.0\r\nContent-Transfer-Encoding: 7bit\r\nFrom: sender@example.com\r\nTo: alice@example.com\r\n\r\nHello"
+	reader2, err := encodeMessageOpt(strings.NewReader(rawWithHeaders), nil, true)
+	if err != nil {
+		t.Fatalf("encodeMessageOpt with existing headers failed: %v", err)
+	}
+	encoded2, _ := io.ReadAll(reader2)
+	decoded2, _ := base64.StdEncoding.DecodeString(string(encoded2))
+	if string(decoded2) != rawWithHeaders {
+		t.Errorf("expected existing headers to be untouched: got %q, expected %q", string(decoded2), rawWithHeaders)
 	}
 }
