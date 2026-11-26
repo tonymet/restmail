@@ -1,17 +1,18 @@
 package rest
 
 import (
-	"errors"
+	"bytes"
+	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
-
-	"google.golang.org/api/gmail/v1"
-	"google.golang.org/api/googleapi"
-	"google.golang.org/api/option"
 )
+
+// GmailSendEndpoint is the Gmail API endpoint for sending messages.
+var GmailSendEndpoint = "https://gmail.googleapis.com/gmail/v1/users/me/messages/send"
 
 // google config
 
@@ -37,74 +38,77 @@ func (p *GoogleProvider) SendMessageOpt(messageReader io.Reader, args []string, 
 }
 
 func NewProviderGoogle(provider, sender string, storage ConfigStorage) (IProvider, error) {
-	var (
-		p   = &GoogleProvider{config: googleOAuth2Config}
-		err error
-		st  = &SavedToken{config: googleOAuth2Config, provider: provider, id: sender, Storage: storage}
-	)
+	st := &SavedToken{config: googleOAuth2Config, provider: provider, id: sender, Storage: storage}
 	if err := st.Open(); err != nil {
 		return nil, err
 	}
-	// use our tokensource and override httpClient for testing
-	opts := make([]option.ClientOption, 0)
-	opts = append(opts, option.WithTokenSource(st))
-	if hc, ok := storage.Context().Value(oauth2.HTTPClient).(*http.Client); ok {
-		opts = append(opts, option.WithHTTPClient(hc))
-	}
-	if p.srv, err = gmail.NewService(storage.Context(), opts...); err != nil {
-		return p, err
+	// oauth2.NewClient respects oauth2.HTTPClient in context (used in tests) and wraps st as TokenSource.
+	p := &GoogleProvider{
+		config: googleOAuth2Config,
+		client: oauth2.NewClient(storage.Context(), st),
 	}
 	return p, nil
 }
 
-// GoogleAPIError wraps a googleapi.Error and implements ExitCoder and StatusCode.
+// GoogleAPIError represents an error returned by the Gmail REST API and implements ExitCoder and StatusCode.
 type GoogleAPIError struct {
-	Err *googleapi.Error
+	HTTPStatusCode int
+	Message        string
 }
 
 func (e *GoogleAPIError) StatusCode() int {
-	if e.Err != nil {
-		return e.Err.Code
-	}
-	return 0
+	return e.HTTPStatusCode
 }
 
 func (e *GoogleAPIError) ExitCode() int {
-	if e.Err == nil {
-		return ExitOk
-	}
-	if e.Err.Code == http.StatusTooManyRequests || e.Err.Code >= 500 {
-		return ExitTempFail
-	}
-	if e.Err.Code >= 400 && e.Err.Code < 500 {
-		return ExitUnavailable
-	}
-	return ExitTempFail
+	return exitCodeForHTTPStatus(e.HTTPStatusCode)
 }
 
 func (e *GoogleAPIError) Error() string {
-	return e.Err.Error()
-}
-
-func (e *GoogleAPIError) Unwrap() error {
-	return e.Err
-}
-
-func (p *GoogleProvider) sendMessageRest(bodyReader io.Reader) (*http.Response, error) {
-	if requestBody, err := io.ReadAll(bodyReader); err != nil {
-		panic(err)
-	} else {
-		gmsg := &gmail.Message{
-			Raw: string(requestBody),
-		}
-		googleResponse, err := p.srv.Users.Messages.Send("me", gmsg).Do()
-		if err != nil {
-			var gErr *googleapi.Error
-			if errors.As(err, &gErr) {
-				return &http.Response{}, &GoogleAPIError{Err: gErr}
-			}
-			return &http.Response{}, err
-		}
-		return &http.Response{StatusCode: googleResponse.HTTPStatusCode, Header: googleResponse.Header}, err
+	if e.Message != "" {
+		return fmt.Sprintf("googleapi: Error %d: %s", e.HTTPStatusCode, e.Message)
 	}
+	return fmt.Sprintf("googleapi: Error %d", e.HTTPStatusCode)
+}
+
+func parseGoogleAPIError(res *http.Response) *GoogleAPIError {
+	gErr := &GoogleAPIError{HTTPStatusCode: res.StatusCode}
+	var parsed struct {
+		Error struct {
+			Code    int    `json:"code"`
+			Message string `json:"message"`
+		} `json:"error"`
+	}
+	if err := json.NewDecoder(res.Body).Decode(&parsed); err == nil {
+		if parsed.Error.Code != 0 {
+			gErr.HTTPStatusCode = parsed.Error.Code
+		}
+		gErr.Message = parsed.Error.Message
+	}
+	return gErr
+}
+
+func (p *GoogleProvider) sendMessageRest(bodyBuf *bytes.Buffer) (*http.Response, error) {
+	var payload bytes.Buffer
+	if err := json.NewEncoder(&payload).Encode(struct {
+		Raw string `json:"raw"`
+	}{
+		Raw: bodyBuf.String(),
+	}); err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest(http.MethodPost, GmailSendEndpoint, &payload)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	res, err := p.client.Do(req)
+	if err != nil {
+		return &http.Response{}, err
+	}
+	defer res.Body.Close()
+	if res.StatusCode > 299 {
+		return &http.Response{}, parseGoogleAPIError(res)
+	}
+	return res, nil
 }

@@ -5,8 +5,6 @@ import (
 	"net"
 	"testing"
 	"time"
-
-	"google.golang.org/api/googleapi"
 )
 
 type dummyTimeoutErr struct{}
@@ -78,17 +76,17 @@ func TestClassifyDeliveryError(t *testing.T) {
 		},
 		{
 			name:     "googleapi 500 error is ExitTempFail",
-			err:      &GoogleAPIError{Err: &googleapi.Error{Code: 500, Message: "Internal Server Error"}},
+			err:      &GoogleAPIError{HTTPStatusCode: 500, Message: "Internal Server Error"},
 			expected: ExitTempFail,
 		},
 		{
 			name:     "googleapi 429 rate limit is ExitTempFail",
-			err:      &GoogleAPIError{Err: &googleapi.Error{Code: 429, Message: "Quota Exceeded"}},
+			err:      &GoogleAPIError{HTTPStatusCode: 429, Message: "Quota Exceeded"},
 			expected: ExitTempFail,
 		},
 		{
 			name:     "googleapi 400 error is ExitUnavailable",
-			err:      &GoogleAPIError{Err: &googleapi.Error{Code: 400, Message: "Invalid Argument"}},
+			err:      &GoogleAPIError{HTTPStatusCode: 400, Message: "Invalid Argument"},
 			expected: ExitUnavailable,
 		},
 		{

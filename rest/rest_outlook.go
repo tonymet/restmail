@@ -7,9 +7,7 @@ import (
 	"net/http"
 
 	"golang.org/x/oauth2"
-
 	"golang.org/x/oauth2/microsoft"
-	"google.golang.org/api/gmail/v1"
 )
 
 type OutlookProvider struct {
@@ -20,7 +18,7 @@ type OutlookProvider struct {
 
 type GoogleProvider struct {
 	config *oauth2.Config
-	srv    *gmail.Service
+	client *http.Client
 }
 
 type IProvider interface {
@@ -81,13 +79,7 @@ func (e *GraphError) StatusCode() int {
 }
 
 func (e *GraphError) ExitCode() int {
-	if e.HTTPStatusCode == http.StatusTooManyRequests || e.HTTPStatusCode >= 500 {
-		return ExitTempFail
-	}
-	if e.HTTPStatusCode >= 400 && e.HTTPStatusCode < 500 {
-		return ExitUnavailable
-	}
-	return ExitTempFail
+	return exitCodeForHTTPStatus(e.HTTPStatusCode)
 }
 
 func (e *GraphError) Error() string {
@@ -99,18 +91,13 @@ func (e *GraphError) Error() string {
 
 func parseGraphError(res *http.Response) *GraphError {
 	graphErr := &GraphError{HTTPStatusCode: res.StatusCode}
-	bodyBytes, err := io.ReadAll(res.Body)
-	if err != nil || len(bodyBytes) == 0 {
-		return graphErr
-	}
-
 	var parsed struct {
 		Error struct {
 			Code    string `json:"code"`
 			Message string `json:"message"`
 		} `json:"error"`
 	}
-	if err := json.Unmarshal(bodyBytes, &parsed); err == nil && (parsed.Error.Code != "" || parsed.Error.Message != "") {
+	if err := json.NewDecoder(res.Body).Decode(&parsed); err == nil && (parsed.Error.Code != "" || parsed.Error.Message != "") {
 		graphErr.Code = parsed.Error.Code
 		graphErr.Message = parsed.Error.Message
 	}

@@ -92,13 +92,7 @@ func ClassifyDeliveryError(err error) int {
 	}
 	var scErr hasStatusCode
 	if errors.As(err, &scErr) {
-		code := scErr.StatusCode()
-		if code == http.StatusTooManyRequests || code >= 500 {
-			return ExitTempFail
-		}
-		if code >= 400 && code < 500 {
-			return ExitUnavailable
-		}
+		return exitCodeForHTTPStatus(scErr.StatusCode())
 	}
 
 	// 4. Check for network timeouts / temporary network errors
@@ -110,5 +104,15 @@ func ClassifyDeliveryError(err error) int {
 	}
 
 	// Default unknown errors to ExitTempFail so smtpd can retry transient glitches
+	return ExitTempFail
+}
+
+func exitCodeForHTTPStatus(code int) int {
+	if code == http.StatusTooManyRequests || code >= 500 {
+		return ExitTempFail
+	}
+	if code >= 400 && code < 500 {
+		return ExitUnavailable
+	}
 	return ExitTempFail
 }

@@ -18,15 +18,19 @@ type messageHeader struct {
 func parseArgs(args []string) (mh messageHeader) {
 	mh.to, mh.cc, mh.bcc = make([]string, 0), make([]string, 0), make([]string, 0)
 	for _, arg := range args {
-		parts := strings.Split(arg, ":")
-		switch parts[0] {
-		case "bcc":
-			mh.bcc = append(mh.bcc, parts[1])
-		case "cc":
-			mh.cc = append(mh.cc, parts[1])
-		default:
-			mh.to = append(mh.to, parts[0])
+		key, val, hasColon := strings.Cut(arg, ":")
+		if hasColon {
+			val, _, _ = strings.Cut(val, ":")
+			switch key {
+			case "bcc":
+				mh.bcc = append(mh.bcc, val)
+				continue
+			case "cc":
+				mh.cc = append(mh.cc, val)
+				continue
+			}
 		}
+		mh.to = append(mh.to, key)
 	}
 	return
 }
@@ -82,73 +86,84 @@ func ParseMessageHeaders(in io.Reader) (MessageHeader, io.Reader, error) {
 	return mh, bytes.NewReader(raw), nil
 }
 
+func writeHeaderLine(b *strings.Builder, name string, values []string) {
+	b.WriteString(name)
+	b.WriteString(": ")
+	for i, v := range values {
+		if i > 0 {
+			b.WriteByte(',')
+		}
+		b.WriteString(v)
+	}
+	b.WriteString(MIME_LINE)
+}
+
 func (mh messageHeader) mimeHeader() io.Reader {
 	var header strings.Builder
-	header.WriteString("MIME-Version: 1.0" + MIME_LINE)
-	header.WriteString("Content-Transfer-Encoding: quoted-printable" + MIME_LINE)
-	header.WriteString("To: " + strings.Join(mh.to, ",") + MIME_LINE)
+	header.WriteString("MIME-Version: 1.0")
+	header.WriteString(MIME_LINE)
+	header.WriteString("Content-Transfer-Encoding: quoted-printable")
+	header.WriteString(MIME_LINE)
+	writeHeaderLine(&header, "To", mh.to)
 	if len(mh.bcc) > 0 {
-		header.WriteString("Bcc: " + strings.Join(mh.bcc, ",") + MIME_LINE)
+		writeHeaderLine(&header, "Bcc", mh.bcc)
 	}
 	if len(mh.cc) > 0 {
-		header.WriteString("Cc: " + strings.Join(mh.cc, ",") + MIME_LINE)
+		writeHeaderLine(&header, "Cc", mh.cc)
 	}
 	return strings.NewReader(header.String())
 }
 
-func encodeMessage(in io.Reader, args []string) (io.Reader, error) {
+func encodeMessage(in io.Reader, args []string) (*bytes.Buffer, error) {
 	return encodeMessageOpt(in, args, false)
 }
 
-func encodeMessageOpt(in io.Reader, args []string, parseHeaders bool) (io.Reader, error) {
+func prependMissingMIMEHeaders(in io.Reader) (io.Reader, error) {
+	raw, err := io.ReadAll(in)
+	if err != nil {
+		return nil, err
+	}
+	msg, err := mail.ReadMessage(bytes.NewReader(raw))
+	if err != nil {
+		return bytes.NewReader(raw), nil
+	}
+	var injected strings.Builder
+	if msg.Header.Get("Mime-Version") == "" {
+		injected.WriteString("MIME-Version: 1.0")
+		injected.WriteString(MIME_LINE)
+	}
+	if msg.Header.Get("Content-Transfer-Encoding") == "" {
+		injected.WriteString("Content-Transfer-Encoding: quoted-printable")
+		injected.WriteString(MIME_LINE)
+	}
+	if injected.Len() > 0 {
+		return io.MultiReader(strings.NewReader(injected.String()), bytes.NewReader(raw)), nil
+	}
+	return bytes.NewReader(raw), nil
+}
+
+func encodeMessageOpt(in io.Reader, args []string, parseHeaders bool) (*bytes.Buffer, error) {
 	var (
-		header       MessageHeader
 		finalPayload io.Reader
+		err          error
 	)
 
 	if parseHeaders {
-		parsedHdr, reader, err := ParseMessageHeaders(in)
-		if err != nil {
+		if finalPayload, err = prependMissingMIMEHeaders(in); err != nil {
 			return nil, err
-		}
-		header = parsedHdr
-
-		// Check if MIME-Version or Content-Transfer-Encoding are present in existing headers.
-		// If not present, inject them without overwriting or interrupting existing headers.
-		raw, err := io.ReadAll(reader)
-		if err != nil {
-			return nil, err
-		}
-		msg, err := mail.ReadMessage(bytes.NewReader(raw))
-		var injected strings.Builder
-		if err == nil {
-			if msg.Header.Get("Mime-Version") == "" {
-				injected.WriteString("MIME-Version: 1.0" + MIME_LINE)
-			}
-			if msg.Header.Get("Content-Transfer-Encoding") == "" {
-				injected.WriteString("Content-Transfer-Encoding: quoted-printable" + MIME_LINE)
-			}
-		}
-		if injected.Len() > 0 {
-			finalPayload = io.MultiReader(strings.NewReader(injected.String()), bytes.NewReader(raw))
-		} else {
-			finalPayload = bytes.NewReader(raw)
 		}
 	} else {
 		parsedArgs := parseArgs(args)
-		header = MessageHeader{
-			To:  parsedArgs.to,
-			Cc:  parsedArgs.cc,
-			Bcc: parsedArgs.bcc,
-		}
 		finalPayload = io.MultiReader(parsedArgs.mimeHeader(), in)
 	}
-	_ = header // available if recipient list is ever needed separately
 
-	var encodedBuf = bytes.NewBuffer(make([]byte, 0, 2048))
+	encodedBuf := bytes.NewBuffer(make([]byte, 0, 2048))
 	messageEncoder := base64.NewEncoder(base64.StdEncoding, encodedBuf)
-	defer messageEncoder.Close() //nolint: errcheck
 	if _, err := io.Copy(messageEncoder, finalPayload); err != nil {
+		_ = messageEncoder.Close()
+		return nil, err
+	}
+	if err := messageEncoder.Close(); err != nil {
 		return nil, err
 	}
 	return encodedBuf, nil
